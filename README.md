@@ -12,7 +12,7 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/yourusername/T5G1.git
+    git clone https://github.com/Saptow/T5G1.git
     cd T5G1
     ```
 
