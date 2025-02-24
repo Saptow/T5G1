@@ -44,5 +44,10 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 
 Your virtual environment is now set up and you can start working on the project.
 
-**IF YOU INSTALL NEW DEPENDENCIES**
-pip freeze > requirements.txt (replace so that anyone after can just install using the requirements.txt to solve the problem)
+
+**IF YOU INSTALL NEW DEPENDENCIES/LIBRARIES**
+run 
+```sh
+pip freeze > requirements.txt
+```
+(replace so that anyone after can just install using the requirements.txt to solve the problem)
