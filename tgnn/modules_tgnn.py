@@ -22,7 +22,21 @@ class Identity(nn.Module):
         """Return input"""
         return x
 
-
+class EdgeFeaturePredictor(nn.Module):
+    def __init__(self, embedding_dim, edge_feat_dim):
+        super(EdgeFeaturePredictor, self).__init__()
+        self.predictor = nn.Sequential(
+            nn.Linear(embedding_dim * 2, embedding_dim),
+            nn.ReLU(),
+            nn.Linear(embedding_dim, edge_feat_dim)
+        )
+    
+    def forward(self, src_embeddings, dst_embeddings):
+        # Concatenate source and destination embeddings
+        combined = torch.cat([src_embeddings, dst_embeddings], dim=1)
+        # Predict edge features
+        return self.predictor(combined)
+    
 class MsgLinkPredictor(nn.Module):
     """Predict Pair wise link from pos subg and neg subg
     use message passing.

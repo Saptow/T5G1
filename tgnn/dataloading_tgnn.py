@@ -171,57 +171,65 @@ class TemporalEdgeCollator(EdgeCollator):
 
     """
 
-    def _collate_with_negative_sampling(self, items):
-        items = _prepare_tensor(self.g_sampling, items, 'items', False)
-        # Here node id will not change
-        pair_graph = self.g.edge_subgraph(items, relabel_nodes=False)
-        induced_edges = pair_graph.edata[dgl.EID]
+    # def _collate_with_negative_sampling(self, items):
+    #     items = _prepare_tensor(self.g_sampling, items, 'items', False)
+    #     # Here node id will not change
+    #     pair_graph = self.g.edge_subgraph(items, relabel_nodes=False)
+    #     induced_edges = pair_graph.edata[dgl.EID]
 
-        neg_srcdst_raw = self.negative_sampler(self.g, items)
-        neg_srcdst = {self.g.canonical_etypes[0]: neg_srcdst_raw}
-        dtype = list(neg_srcdst.values())[0][0].dtype
-        neg_edges = {
-            etype: neg_srcdst.get(etype, (torch.tensor(
-                [], dtype=dtype), torch.tensor([], dtype=dtype)))
-            for etype in self.g.canonical_etypes}
+    #     neg_srcdst_raw = self.negative_sampler(self.g, items)
+    #     neg_srcdst = {self.g.canonical_etypes[0]: neg_srcdst_raw}
+    #     dtype = list(neg_srcdst.values())[0][0].dtype
+    #     neg_edges = {
+    #         etype: neg_srcdst.get(etype, (torch.tensor(
+    #             [], dtype=dtype), torch.tensor([], dtype=dtype)))
+    #         for etype in self.g.canonical_etypes}
 
-        neg_pair_graph = dgl.heterograph(
-            neg_edges, {ntype: self.g.number_of_nodes(ntype) for ntype in self.g.ntypes})
-        pair_graph, neg_pair_graph = dgl.transforms.compact_graphs(
-            [pair_graph, neg_pair_graph])
-        # Need to remap id
-        pair_graph.ndata[dgl.NID] = self.g.nodes()[pair_graph.ndata[dgl.NID]]
-        neg_pair_graph.ndata[dgl.NID] = self.g.nodes()[
-            neg_pair_graph.ndata[dgl.NID]]
+    #     neg_pair_graph = dgl.heterograph(
+    #         neg_edges, {ntype: self.g.number_of_nodes(ntype) for ntype in self.g.ntypes})
+    #     pair_graph, neg_pair_graph = dgl.transforms.compact_graphs(
+    #         [pair_graph, neg_pair_graph])
+    #     # Need to remap id
+    #     pair_graph.ndata[dgl.NID] = self.g.nodes()[pair_graph.ndata[dgl.NID]]
+    #     neg_pair_graph.ndata[dgl.NID] = self.g.nodes()[
+    #         neg_pair_graph.ndata[dgl.NID]]
 
-        pair_graph.edata[dgl.EID] = induced_edges
+    #     pair_graph.edata[dgl.EID] = induced_edges
 
-        batch_graphs = []
-        nodes_id = []
-        timestamps = []
+    #     batch_graphs = []
+    #     nodes_id = []
+    #     timestamps = []
 
-        for i, edge in enumerate(zip(self.g.edges()[0][items], self.g.edges()[1][items])):
-            ts = pair_graph.edata['timestamp'][i]
-            timestamps.append(ts)
-            subg = self.graph_sampler.sample_blocks(self.g_sampling,
-                                                    list(edge),
-                                                    timestamp=ts)[0]
-            subg.ndata['timestamp'] = ts.repeat(subg.num_nodes())
-            nodes_id.append(subg.srcdata[dgl.NID])
-            batch_graphs.append(subg)
-        timestamps = torch.tensor(timestamps).repeat_interleave(
-            self.negative_sampler.k)
-        for i, neg_edge in enumerate(zip(neg_srcdst_raw[0].tolist(), neg_srcdst_raw[1].tolist())):
-            ts = timestamps[i]
-            subg = self.graph_sampler.sample_blocks(self.g_sampling,
-                                                    [neg_edge[1]],
-                                                    timestamp=ts)[0]
-            subg.ndata['timestamp'] = ts.repeat(subg.num_nodes())
-            batch_graphs.append(subg)
-        blocks = [dgl.batch(batch_graphs)]
-        input_nodes = torch.cat(nodes_id)
-        return input_nodes, pair_graph, neg_pair_graph, blocks
+    #     for i, edge in enumerate(zip(self.g.edges()[0][items], self.g.edges()[1][items])):
+    #         ts = pair_graph.edata['timestamp'][i]
+    #         timestamps.append(ts)
+    #         subg = self.graph_sampler.sample_blocks(self.g_sampling,
+    #                                                 list(edge),
+    #                                                 timestamp=ts)[0]
+    #         subg.ndata['timestamp'] = ts.repeat(subg.num_nodes())
+    #         nodes_id.append(subg.srcdata[dgl.NID])
+    #         batch_graphs.append(subg)
+    #     timestamps = torch.tensor(timestamps).repeat_interleave(
+    #         self.negative_sampler.k)
+    #     for i, neg_edge in enumerate(zip(neg_srcdst_raw[0].tolist(), neg_srcdst_raw[1].tolist())):
+    #         ts = timestamps[i]
+    #         subg = self.graph_sampler.sample_blocks(self.g_sampling,
+    #                                                 [neg_edge[1]],
+    #                                                 timestamp=ts)[0]
+    #         subg.ndata['timestamp'] = ts.repeat(subg.num_nodes())
+    #         batch_graphs.append(subg)
+    #     blocks = [dgl.batch(batch_graphs)]
+    #     input_nodes = torch.cat(nodes_id)
+    #     return input_nodes, pair_graph, neg_pair_graph, blocks
 
+    def collate(self, items):
+        # Use the regular _collate method instead of _collate_with_negative_sampling
+        result = self._collate(items)
+        # Copy the feature from parent graph
+        _pop_subgraph_storage(result[1], self.g)
+        _pop_storages(result[-1], self.g_sampling)
+        return result
+    
     def collator(self, items):
         """
         The interface of collator, input items is edge id of the attached graph
@@ -547,44 +555,30 @@ class FastTemporalEdgeCollator(EdgeCollator):
 
     """
 
-    def _collate_with_negative_sampling(self, items):
+    def collate(self, items):
         items = _prepare_tensor(self.g_sampling, items, 'items', False)
         # Here node id will not change
         pair_graph = self.g.edge_subgraph(items, relabel_nodes=False)
         induced_edges = pair_graph.edata[dgl.EID]
-
-        neg_srcdst_raw = self.negative_sampler(self.g, items)
-        neg_srcdst = {self.g.canonical_etypes[0]: neg_srcdst_raw}
-        dtype = list(neg_srcdst.values())[0][0].dtype
-        neg_edges = {
-            etype: neg_srcdst.get(etype, (torch.tensor(
-                [], dtype=dtype), torch.tensor([], dtype=dtype)))
-            for etype in self.g.canonical_etypes}
-
-        neg_pair_graph = dgl.heterograph(
-            neg_edges, {ntype: self.g.number_of_nodes(ntype) for ntype in self.g.ntypes})
-        pair_graph, neg_pair_graph = dgl.transforms.compact_graphs(
-            [pair_graph, neg_pair_graph])
-        # Need to remap id
-
+        
         pair_graph.ndata[dgl.NID] = self.g.nodes()[pair_graph.ndata[dgl.NID]]
-        neg_pair_graph.ndata[dgl.NID] = self.g.nodes()[
-            neg_pair_graph.ndata[dgl.NID]]
-
         pair_graph.edata[dgl.EID] = induced_edges
 
         seed_nodes = pair_graph.ndata[dgl.NID]
         blocks = self.graph_sampler.sample_blocks(self.g_sampling, seed_nodes)
-        blocks[0].ndata['timestamp'] = torch.zeros(
-            blocks[0].num_nodes()).double()
+        blocks[0].ndata['timestamp'] = torch.zeros(blocks[0].num_nodes()).double()
         input_nodes = blocks[0].edges()[1]
 
         # update sampler
         _src = self.g.nodes()[self.g.edges()[0][items]]
         _dst = self.g.nodes()[self.g.edges()[1][items]]
         self.graph_sampler.add_edges(_src, _dst)
-        return input_nodes, pair_graph, neg_pair_graph, blocks
-
+        
+        result = (input_nodes, pair_graph, None, blocks)
+        # Copy the feature from parent graph
+        _pop_subgraph_storage(result[1], self.g)
+        _pop_storages(result[-1], self.g_sampling)
+        return result
     def collator(self, items):
         result = super().collate(items)
         # Copy the feature from parent graph
@@ -711,20 +705,13 @@ class SimpleTemporalEdgeCollator(EdgeCollator):
                                                          g_sampling, exclude, reverse_eids, reverse_etypes, negative_sampler)
         self.n_layer = len(self.graph_sampler.fanouts)
 
-    def collate(self,items):
-        '''
-        items: edge id in graph g.
-        We sample iteratively k-times and batch them into one single subgraph.
-        '''
-        current_ts = self.g.edata['timestamp'][items[0]]     #only sample edges before current timestamp
-        self.graph_sampler.ts = current_ts    # restore the current timestamp to the graph sampler.
+    def collate(self, items):
+        current_ts = self.g.edata['timestamp'][items[0]]  # only sample edges before current timestamp
+        self.graph_sampler.ts = current_ts  # restore the current timestamp to the graph sampler.
 
-        # if link prefiction, we use a negative_sampler to generate neg-graph for loss computing.
-        if self.negative_sampler is None:
-            neg_pair_graph = None
-            input_nodes, pair_graph, blocks = self._collate(items)
-        else:
-            input_nodes, pair_graph, neg_pair_graph, blocks = self._collate_with_negative_sampling(items)
+        # No negative sampling
+        input_nodes, pair_graph, blocks = self._collate(items)
+        neg_pair_graph = None
 
         # we sampling k-hop subgraph and batch them into one graph
         for i in range(self.n_layer-1):
