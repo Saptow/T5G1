@@ -1,15 +1,58 @@
 import torch
 import dgl
-
-from dgl._dataloading.dataloader import EdgeCollator
-from dgl._dataloading import BlockSampler
-from dgl._dataloading.pytorch import _pop_subgraph_storage, _pop_storages, EdgeDataLoader
+from dgl.dataloading import BlockSampler
+from dgl.dataloading import DistEdgeDataLoader as EdgeDataLoader
 from dgl.base import DGLError
 
 from functools import partial
 import copy
 import dgl.function as fn
 
+def _pop_subframe_storage(subframe, frame):
+    for key, col in subframe._columns.items():
+        if key in frame._columns and col.storage is frame._columns[key].storage:
+            col.storage = None
+
+def _pop_subgraph_storage(subg, g):
+    for ntype in subg.ntypes:
+        if ntype not in g.ntypes:
+            continue
+        subframe = subg._node_frames[subg.get_ntype_id(ntype)]
+        frame = g._node_frames[g.get_ntype_id(ntype)]
+        _pop_subframe_storage(subframe, frame)
+    for etype in subg.canonical_etypes:
+        if etype not in g.canonical_etypes:
+            continue
+        subframe = subg._edge_frames[subg.get_etype_id(etype)]
+        frame = g._edge_frames[g.get_etype_id(etype)]
+        _pop_subframe_storage(subframe, frame)
+
+def _pop_block_storage(block, g):
+    for ntype in block.srctypes:
+        if ntype not in g.ntypes:
+            continue
+        subframe = block._node_frames[block.get_ntype_id_from_src(ntype)]
+        frame = g._node_frames[g.get_ntype_id(ntype)]
+        _pop_subframe_storage(subframe, frame)
+    for ntype in block.dsttypes:
+        if ntype not in g.ntypes:
+            continue
+        subframe = block._node_frames[block.get_ntype_id_from_dst(ntype)]
+        frame = g._node_frames[g.get_ntype_id(ntype)]
+        _pop_subframe_storage(subframe, frame)
+    for etype in block.canonical_etypes:
+        if etype not in g.canonical_etypes:
+            continue
+        subframe = block._edge_frames[block.get_etype_id(etype)]
+        frame = g._edge_frames[g.get_etype_id(etype)]
+        _pop_subframe_storage(subframe, frame)
+
+def _pop_storages(subgs, g):
+    for subg in subgs:
+        if subg.is_block:
+            _pop_block_storage(subg, g)
+        else:
+            _pop_subgraph_storage(subg, g)
 
 def _prepare_tensor(g, data, name, is_distributed):
     return torch.tensor(data) if is_distributed else dgl.utils.prepare_tensor(g, data, name)
@@ -96,7 +139,7 @@ class TemporalSampler(BlockSampler):
         return blocks
 
 
-class TemporalEdgeCollator(EdgeCollator):
+class TemporalEdgeCollator(dgl.dataloading.EdgeCollator):
     """ Temporal Edge collator merge the edges specified by eid: items
 
     Since we cannot keep duplicated nodes on a graph we need to iterate though
@@ -480,7 +523,7 @@ class FastTemporalSampler(BlockSampler):
         self.__assoc__ = copy.deepcopy(sampler.__assoc__)
 
 
-class FastTemporalEdgeCollator(EdgeCollator):
+class FastTemporalEdgeCollator(dgl.dataloading.EdgeCollator):
     """ Temporal Edge collator merge the edges specified by eid: items
 
     Since we cannot keep duplicated nodes on a graph we need to iterate though
@@ -631,7 +674,7 @@ class SimpleTemporalSampler(BlockSampler):
         return frontier
 
 
-class SimpleTemporalEdgeCollator(EdgeCollator):
+class SimpleTemporalEdgeCollator(dgl.dataloading.EdgeCollator):
     '''
     Temporal Edge collator merge the edges specified by eid: items
 
