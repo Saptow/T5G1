@@ -51,3 +51,22 @@ run
 pip freeze > requirements.txt
 ```
 (replace so that anyone after can just install using the requirements.txt to solve the problem)
+
+### Running pytorch_geometric_temporal code
+To do this, you might run into some issues installing the required packages. In that case, what you have to do is to install the packages manually. 
+
+```sh
+pip install torch_geometric
+
+# Optional dependencies:
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+```
+## FOR WINDOWS
+Also, before you install torch_geometric_temporal, need to install visual studio build tools. You can download it from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+There, you can refer to the screenshots attached within 
+![alt text](readme1.png)
+
+Under Visual Studio Build Tools 2022, click Modify, and install desktop development with C++ (based on screenshot)
+![alt text](image.png)
+
+Worst case scenario, I will build a docker image for this...
