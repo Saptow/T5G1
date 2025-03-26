@@ -1,7 +1,7 @@
 import torch
 import dgl
-from dgl.dataloading import BlockSampler
-from dgl.dataloading import DistEdgeDataLoader as EdgeDataLoader
+from dgl.dataloading import BlockSampler, EdgeCollator
+from dgl.graphbolt import DataLoader
 from dgl.base import DGLError
 
 from functools import partial
@@ -139,7 +139,7 @@ class TemporalSampler(BlockSampler):
         return blocks
 
 
-class TemporalEdgeCollator(dgl.dataloading.EdgeCollator):
+class TemporalEdgeCollator(EdgeCollator):
     """ Temporal Edge collator merge the edges specified by eid: items
 
     Since we cannot keep duplicated nodes on a graph we need to iterate though
@@ -285,7 +285,7 @@ class TemporalEdgeCollator(dgl.dataloading.EdgeCollator):
         return result
 
 
-class TemporalEdgeDataLoader(EdgeDataLoader):
+class TemporalEdgeDataLoader(DataLoader):
     """ TemporalEdgeDataLoader is an iteratable object to generate blocks for temporal embedding
     as well as pos and neg pair graph for memory update.
 
@@ -523,7 +523,7 @@ class FastTemporalSampler(BlockSampler):
         self.__assoc__ = copy.deepcopy(sampler.__assoc__)
 
 
-class FastTemporalEdgeCollator(dgl.dataloading.EdgeCollator):
+class FastTemporalEdgeCollator(EdgeCollator):
     """ Temporal Edge collator merge the edges specified by eid: items
 
     Since we cannot keep duplicated nodes on a graph we need to iterate though
@@ -674,7 +674,7 @@ class SimpleTemporalSampler(BlockSampler):
         return frontier
 
 
-class SimpleTemporalEdgeCollator(dgl.dataloading.EdgeCollator):
+class SimpleTemporalEdgeCollator(EdgeCollator):
     '''
     Temporal Edge collator merge the edges specified by eid: items
 
