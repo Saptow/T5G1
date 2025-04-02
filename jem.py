@@ -254,7 +254,7 @@ def update_alt_treemaps(selected_country, trade_type, selected_sector, selected_
 
 # === Run ===
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True)
 
 
 
