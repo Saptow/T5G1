@@ -250,3 +250,23 @@ def update_visualizations(selected_country, trade_type, selected_sector, selecte
         fig_country.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
 
     return fig_sector, fig_country, sector_options, partner_options, title_sector, title_country
+
+def static_bar_graph():
+    sample = df[(df['country'] == 'Canada') & (df['trade_type'] == 'import')].copy()
+
+    grouped = sample.groupby('partner_country', as_index=False).agg({
+        'volume': 'sum',
+        'previous_volume': 'sum'
+    })
+
+    grouped['volume'] = pd.to_numeric(grouped['volume'], errors='coerce')
+    grouped['previous_volume'] = pd.to_numeric(grouped['previous_volume'], errors='coerce')
+    grouped = grouped.sort_values('volume', ascending=False).head(10)
+
+    fig = generate_bar_chart(grouped, x_col='partner_country', y_col='volume', previous_col='previous_volume')
+    fig.update_layout(
+        xaxis_title=None,
+        title=None,
+    )
+    return fig
+
