@@ -13,7 +13,20 @@ server = app.server  # Required for deployment (e.g., Heroku, gunicorn)
 
 # Import layouts from modules
 from index import layout as index_layout
-from apps import module1  # You can add more later like module2, module3, etc.
+from apps import module1, module2, module3
+
+
+@app.callback(Output("page-content", "children"), Input("url", "pathname"))
+def display_page(pathname):
+    if pathname == "/module1":
+        return module1.layout
+    elif pathname == "/module2":
+        return module2.layout
+    elif pathname == "/module3":
+        return module3.layout
+    else:
+        return index_layout
+
 
 # ✅ Sidebar (left side)
 sidebar = html.Div([
@@ -21,7 +34,9 @@ sidebar = html.Div([
     html.Hr(),
     dbc.Nav([
         dbc.NavLink("Home", href="/", active="exact"),
-        dbc.NavLink("Trade Explorer", href="/module1", active="exact"),  # Name as you like
+        dbc.NavLink("Trade Explorer", href="/module1", active="exact"),  
+        dbc.NavLink("Another Tool", href="/module2", active="exact"),
+        dbc.NavLink("Something Else", href="/module3", active="exact")# Name as you like
     ], vertical=True, pills=True),
 ], style={
     "position": "fixed",
@@ -40,14 +55,6 @@ app.layout = html.Div([
     html.Div(id="page-content", style={"margin-left": "18rem", "padding": "2rem 1rem"})
 ])
 
-# ✅ Routing Logic
-@app.callback(Output("page-content", "children"),
-              Input("url", "pathname"))
-def display_page(pathname):
-    if pathname == "/module1":
-        return module1.layout
-    else:
-        return index_layout  # Default is the front page
 
 # ✅ Start server
 if __name__ == '__main__':
