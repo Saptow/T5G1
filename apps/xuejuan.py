@@ -3,15 +3,15 @@ from dash import dcc, html, Input, Output, State
 import pandas as pd
 import plotly.express as px
 
-# Load data from CSV (ensure it's present in your repo or public path)
+# Load data from CSV 
 df = pd.read_csv("priscilla_worldmap_data.csv")
 
-# Static data for dropdowns (extracted from actual data for flexibility)
+# Static data for dropdowns 
 years = sorted(df['Year'].unique())
 countries = sorted(df['Country'].unique())
 sectors = sorted(df['Sector'].unique())
 
-# Mapping from ISO3 to Country Name (used for back-reference in clickData)
+# Mapping from ISO3 to Country Name 
 country_iso = df[['Country', 'Country Code']].drop_duplicates().set_index('Country').to_dict()['Country Code']
 iso_to_country = {v: k for k, v in country_iso.items()}
 
