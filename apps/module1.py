@@ -328,8 +328,8 @@ sidebar_controls = html.Div([
 
     html.Label("Display:"),
     dbc.ButtonGroup([
-        dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
-        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
+        dbc.Button("Volume", id='btn-volume', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm'),
+        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm')
     ], className='w-100 mb-3'),
 
     html.Label("Partner Country:"),
