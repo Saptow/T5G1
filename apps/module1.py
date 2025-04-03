@@ -315,14 +315,15 @@ sidebar_controls = html.Div([
         options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
         value=COUNTRY_LIST[0],
         placeholder='Select a country',
+        style={"color": "black", "backgroundColor": "white"},
         searchable=True,
         className='mb-3'
     ),
 
     html.Label("Trade Type:"),
     dbc.ButtonGroup([
-        dbc.Button("Exports", id='btn-export', n_clicks=0, color='primary', outline=True, size='sm'),
-        dbc.Button("Imports", id='btn-import', n_clicks=0, color='secondary', outline=True, size='sm')
+        dbc.Button("Exports", id='btn-export', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm'),
+        dbc.Button("Imports", id='btn-import', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm')
     ], className='w-100 mb-3'),
 
     html.Label("Display:"),
@@ -332,10 +333,10 @@ sidebar_controls = html.Div([
     ], className='w-100 mb-3'),
 
     html.Label("Partner Country:"),
-    dcc.Dropdown(id='country-select-alt2', searchable=True, className='mb-3'),
+    dcc.Dropdown(id='country-select-alt2', style={"color": "black", "backgroundColor": "white"}, searchable=True, className='mb-3'),
 
     html.Label("Sector:"),
-    dcc.Dropdown(id='sector-select-alt', searchable=True, className='mb-3'),
+    dcc.Dropdown(id='sector-select-alt',style={"color": "black", "backgroundColor": "white"}, searchable=True, className='mb-3'),
 
     html.Label("View Top N:"),
     dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,

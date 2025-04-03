@@ -274,6 +274,7 @@ sidebar_controls = html.Div([
         id='num-countries',
         options=[{'label': str(i), 'value': i} for i in [5, 10]],
         value='-',
+        style={"color": "black", "backgroundColor": "white"},
         clearable=True,
         className="mb-3"
     ),
@@ -285,7 +286,7 @@ sidebar_controls = html.Div([
             {'label': "smallest", 'value': "smallest"},
             {'label': "largest", 'value': "largest"}
         ],
-        value='-',
+        style={"color": "black", "backgroundColor": "white"},
         clearable=True,
         className="mb-3"
     ),
@@ -298,7 +299,7 @@ sidebar_controls = html.Div([
             {'label': "trade deficit", 'value': "Trade Deficit"},
             {'label': "trade surplus", 'value': "Trade Surplus"}
         ],
-        value='-',
+        style={"color": "black", "backgroundColor": "white"},
         clearable=True,
         className="mb-3"
     )
