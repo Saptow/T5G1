@@ -19,66 +19,96 @@ MAX_TOP_N = 20
 # We'll use the main app instance from app.py instead
 
 # ✅ CHANGED: Export a layout variable to plug into app.py
+# layout = html.Div([
+#     html.Div([
+#         html.H1("Trade Explorer Dashboard", className="text-center mb-4", style={'color': '#2c3e50'}),
+
+#         dbc.CardBody([
+#             dbc.Row([
+#                 dbc.Col([
+#                     html.Label([
+#                         html.B("Country:"),
+#                         html.I(className="bi bi-info-circle ms-1", id="tooltip-country")
+#                     ]),
+#                     dcc.Dropdown(
+#                         id='country-select',
+#                         options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
+#                         value=COUNTRY_LIST[0],
+#                         placeholder='Select a country',
+#                         searchable=True,
+#                         className='input-dropdown'
+#                     ),
+#                 ], xs=12, sm=12, md=4),
+#             ], className='mb-3', justify='center'),
+
+#             dbc.Row([
+#                 dbc.Col([
+#                     dbc.ButtonGroup([
+#                         dbc.Button("Exports", id='btn-export', n_clicks=0, color='primary', outline=True, size='sm'),
+#                         dbc.Button("Imports", id='btn-import', n_clicks=0, color='secondary', outline=True, size='sm')
+#                     ], className='w-100')
+#                 ], width=4)
+#             ], justify='center', className='mb-2'),
+
+#             dbc.Row([
+#                 dbc.Col([
+#                     dbc.ButtonGroup([
+#                         dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
+#                         dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
+#                     ], className='w-100')
+#                 ], width=4)
+#             ], justify='center', className='mb-2'),
+
+#             dbc.Row([
+#                 dbc.Col([
+#                     html.Label(html.B("Partner Country:")),
+#                     dcc.Dropdown(id='country-select-alt2', searchable=True, className='input-dropdown'),
+#                 ], xs=12, sm=12, md=4),
+
+#                 dbc.Col([
+#                     html.Label(html.B("Sector:")),
+#                     dcc.Dropdown(id='sector-select-alt', searchable=True, className='input-dropdown'),
+#                 ], xs=12, sm=12, md=4),
+#             ], className='mb-3', justify='center'),
+
+#             dbc.Row([
+#                 dbc.Col([
+#                     html.Label(html.B("View Top N:")),
+#                     dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,
+#                                tooltip={"placement": "bottom", "always_visible": True})
+#                 ], width=8)
+#             ], justify='center')
+#         ]),
+
+#         dcc.Loading([
+#             html.Div([
+#                 html.Div(style={'marginTop': '20px'}),
+#                 html.H5(id='sector-title', className="text-center mb-2"),
+#                 dcc.Graph(id='sector-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+#             ], className='mb-4'),
+
+#             html.Div([
+#                 html.H5(id='country-title', className="text-center mb-2"),
+#                 dcc.Graph(id='country-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"})
+#             ])
+#         ])
+#     ], style={
+#         'backgroundColor': '#ffffff',
+#         'padding': '30px',
+#         'fontFamily': 'Open Sans, sans-serif',
+#         'borderRadius': '12px',
+#         'boxShadow': '0 2px 6px rgba(0,0,0,0.1)',
+#         'margin': '20px'
+#     }),
+
+#     dcc.Store(id='trade-type-select', data='export'),
+#     dcc.Store(id='display-type', data='volume'),
+#     dbc.Tooltip("Select the reporting country", target="tooltip-country")
+# ])
+
 layout = html.Div([
     html.Div([
         html.H1("Trade Explorer Dashboard", className="text-center mb-4", style={'color': '#2c3e50'}),
-
-        dbc.CardBody([
-            dbc.Row([
-                dbc.Col([
-                    html.Label([
-                        html.B("Country:"),
-                        html.I(className="bi bi-info-circle ms-1", id="tooltip-country")
-                    ]),
-                    dcc.Dropdown(
-                        id='country-select',
-                        options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
-                        value=COUNTRY_LIST[0],
-                        placeholder='Select a country',
-                        searchable=True,
-                        className='input-dropdown'
-                    ),
-                ], xs=12, sm=12, md=4),
-            ], className='mb-3', justify='center'),
-
-            dbc.Row([
-                dbc.Col([
-                    dbc.ButtonGroup([
-                        dbc.Button("Exports", id='btn-export', n_clicks=0, color='primary', outline=True, size='sm'),
-                        dbc.Button("Imports", id='btn-import', n_clicks=0, color='secondary', outline=True, size='sm')
-                    ], className='w-100')
-                ], width=4)
-            ], justify='center', className='mb-2'),
-
-            dbc.Row([
-                dbc.Col([
-                    dbc.ButtonGroup([
-                        dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
-                        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
-                    ], className='w-100')
-                ], width=4)
-            ], justify='center', className='mb-2'),
-
-            dbc.Row([
-                dbc.Col([
-                    html.Label(html.B("Partner Country:")),
-                    dcc.Dropdown(id='country-select-alt2', searchable=True, className='input-dropdown'),
-                ], xs=12, sm=12, md=4),
-
-                dbc.Col([
-                    html.Label(html.B("Sector:")),
-                    dcc.Dropdown(id='sector-select-alt', searchable=True, className='input-dropdown'),
-                ], xs=12, sm=12, md=4),
-            ], className='mb-3', justify='center'),
-
-            dbc.Row([
-                dbc.Col([
-                    html.Label(html.B("View Top N:")),
-                    dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,
-                               tooltip={"placement": "bottom", "always_visible": True})
-                ], width=8)
-            ], justify='center')
-        ]),
 
         dcc.Loading([
             html.Div([
@@ -105,6 +135,7 @@ layout = html.Div([
     dcc.Store(id='display-type', data='volume'),
     dbc.Tooltip("Select the reporting country", target="tooltip-country")
 ])
+
 
 # ✅ ADDED: get reference to global app (to register callbacks)
 app = get_app()
@@ -270,3 +301,43 @@ def static_bar_graph():
     )
     return fig
 
+## SiDEBar Control
+
+sidebar_controls = html.Div([
+    html.H5("Module 1 Filters", className="text-muted mb-3"),
+
+    html.Label([
+        html.B("Country:"),
+        html.I(className="bi bi-info-circle ms-1", id="tooltip-country")
+    ]),
+    dcc.Dropdown(
+        id='country-select',
+        options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
+        value=COUNTRY_LIST[0],
+        placeholder='Select a country',
+        searchable=True,
+        className='mb-3'
+    ),
+
+    html.Label("Trade Type:"),
+    dbc.ButtonGroup([
+        dbc.Button("Exports", id='btn-export', n_clicks=0, color='primary', outline=True, size='sm'),
+        dbc.Button("Imports", id='btn-import', n_clicks=0, color='secondary', outline=True, size='sm')
+    ], className='w-100 mb-3'),
+
+    html.Label("Display:"),
+    dbc.ButtonGroup([
+        dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
+        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
+    ], className='w-100 mb-3'),
+
+    html.Label("Partner Country:"),
+    dcc.Dropdown(id='country-select-alt2', searchable=True, className='mb-3'),
+
+    html.Label("Sector:"),
+    dcc.Dropdown(id='sector-select-alt', searchable=True, className='mb-3'),
+
+    html.Label("View Top N:"),
+    dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,
+               tooltip={"placement": "bottom", "always_visible": True})
+])

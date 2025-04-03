@@ -39,49 +39,55 @@ def get_filtered_countries(df, num_countries, order, metric):
             return df.nlargest(num_countries, "Trade Balance")["Country"].tolist()
     return []
 
+# layout = html.Div([
+#     html.H1("Singapore's Trade Balance vs Geopolitical Distance in 2022"),
+    
+#     dcc.Dropdown(
+#         id='country-selector',
+#         options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+#         multi=True,
+#         placeholder="Select countries to display",
+#         value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"]  # Default countries
+#     ),
+
+#     html.Div([
+#         html.Span("View the"),
+#         dcc.Dropdown(
+#             id='num-countries',
+#             options=[{'label': str(i), 'value': i} for i in [5, 10]],
+#             value='-',
+#             clearable=True,
+#             style={"width": "80px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         html.Span("countries that Singapore has the"),
+#         dcc.Dropdown(
+#             id='order-selector',
+#             options=[
+#             {'label': "smallest", 'value': "smallest"},
+#             {'label': "largest", 'value': "largest"}],
+#             value='-',
+#             clearable=True,
+#             style={"width": "120px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         dcc.Dropdown(
+#             id='metric-selector',
+#             options=[
+#                 {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
+#                 {'label': "trade deficit", 'value': "Trade Deficit"},
+#                 {'label': "trade surplus", 'value': "Trade Surplus"}],
+#             value='-',
+#             clearable=True,
+#             style={"width": "180px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         html.Span(" with", style={"font-size": "18px"})
+#     ], style={"display": "flex", "align-items": "center", "gap": "5px"}),
+
+#     dcc.Graph(id='trade-graph')
+# ])
+
+# === Main Layout (Graph only) ===
 layout = html.Div([
     html.H1("Singapore's Trade Balance vs Geopolitical Distance in 2022"),
-    
-    dcc.Dropdown(
-        id='country-selector',
-        options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
-        multi=True,
-        placeholder="Select countries to display",
-        value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"]  # Default countries
-    ),
-
-    html.Div([
-        html.Span("View the"),
-        dcc.Dropdown(
-            id='num-countries',
-            options=[{'label': str(i), 'value': i} for i in [5, 10]],
-            value='-',
-            clearable=True,
-            style={"width": "80px", "display": "inline-block", "vertical-align": "middle"}
-        ),
-        html.Span("countries that Singapore has the"),
-        dcc.Dropdown(
-            id='order-selector',
-            options=[
-            {'label': "smallest", 'value': "smallest"},
-            {'label': "largest", 'value': "largest"}],
-            value='-',
-            clearable=True,
-            style={"width": "120px", "display": "inline-block", "vertical-align": "middle"}
-        ),
-        dcc.Dropdown(
-            id='metric-selector',
-            options=[
-                {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
-                {'label': "trade deficit", 'value': "Trade Deficit"},
-                {'label': "trade surplus", 'value': "Trade Surplus"}],
-            value='-',
-            clearable=True,
-            style={"width": "180px", "display": "inline-block", "vertical-align": "middle"}
-        ),
-        html.Span(" with", style={"font-size": "18px"})
-    ], style={"display": "flex", "align-items": "center", "gap": "5px"}),
-
     dcc.Graph(id='trade-graph')
 ])
 
@@ -248,3 +254,52 @@ def update_graph(selected_countries, num_countries, order, metric):
 
     
     return fig
+
+# === Sidebar Controls for Module 3 ===
+sidebar_controls = html.Div([
+    html.H5("Trade Distance Filters", className="text-muted mb-3"),
+
+    html.Label("Select Countries:"),
+    dcc.Dropdown(
+        id='country-selector',
+        options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+        multi=True,
+        placeholder="Select countries to display",
+        value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"],
+        className="mb-3"
+    ),
+
+    html.Label("View Top N Countries:"),
+    dcc.Dropdown(
+        id='num-countries',
+        options=[{'label': str(i), 'value': i} for i in [5, 10]],
+        value='-',
+        clearable=True,
+        className="mb-3"
+    ),
+
+    html.Label("Trade Order Criterion:"),
+    dcc.Dropdown(
+        id='order-selector',
+        options=[
+            {'label': "smallest", 'value': "smallest"},
+            {'label': "largest", 'value': "largest"}
+        ],
+        value='-',
+        clearable=True,
+        className="mb-3"
+    ),
+
+    html.Label("Trade Metric:"),
+    dcc.Dropdown(
+        id='metric-selector',
+        options=[
+            {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
+            {'label': "trade deficit", 'value': "Trade Deficit"},
+            {'label': "trade surplus", 'value': "Trade Surplus"}
+        ],
+        value='-',
+        clearable=True,
+        className="mb-3"
+    )
+])
