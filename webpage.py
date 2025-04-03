@@ -28,16 +28,8 @@ sidebar = html.Div([
 
     # ✅ This is the ONLY sidebar-dynamic block (do NOT duplicate)
     html.Div(id="sidebar-dynamic")
-], style={
-    "position": "fixed",
-    "top": 0,
-    "left": 0,
-    "bottom": 0,
-    "width": "16rem",
-    "padding": "2rem 1rem",
-    "background-color": "#f8f9fa",
-    "overflowY": "auto"
-})
+], className= "sidebar"
+)
 
 # === App Layout ===
 app.layout = html.Div([
