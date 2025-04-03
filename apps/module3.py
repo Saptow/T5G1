@@ -264,7 +264,7 @@ sidebar_controls = html.Div([
         id='country-selector',
         options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
         multi=True,
-        placeholder="Select countries to display",
+        style={"color": "black", "backgroundColor": "white"},
         value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"],
         className="mb-3"
     ),
@@ -273,7 +273,6 @@ sidebar_controls = html.Div([
     dcc.Dropdown(
         id='num-countries',
         options=[{'label': str(i), 'value': i} for i in [5, 10]],
-        value='-',
         style={"color": "black", "backgroundColor": "white"},
         clearable=True,
         className="mb-3"
