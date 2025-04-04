@@ -88,18 +88,18 @@ sidebar_controls = html.Div([
     dcc.Dropdown(
         id='sector-filter',
         options=[{'label': sector, 'value': sector} for sector in sectors],
-        value=sectors, multi=True, className="mb-3"
+        value=sectors, multi=True, style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     ),
 
     html.Label("Select Countries:"),
     dcc.Dropdown(
         id='country-filter',
         options=[{'label': country, 'value': country} for country in countries],
-        value=countries, multi=True, className="mb-3"
+        value=countries, multi=True, style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     ),
 
     html.Label("Top N Countries by Trade Volume:"),
-    dcc.Input(id='top-n', type='number', min=1, step=1, placeholder='(optional)', className="mb-3"),
+    dcc.Input(id='top-n', type='number', min=1, step=1, style={"color": "black", "backgroundColor": "white"}, className="mb-3"),
 
     html.Label("Metric:"),
     dcc.Dropdown(
@@ -108,7 +108,7 @@ sidebar_controls = html.Div([
             {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
             {'label': '% Change from Base Year', 'value': '% Change from Base'}
         ],
-        value='Avg_Trade_Volume', className="mb-3"
+        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     )
 ])
 
