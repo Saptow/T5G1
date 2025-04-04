@@ -108,6 +108,7 @@ sidebar_controls = html.Div([
             {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
             {'label': '% Change from Base Year', 'value': '% Change from Base'}
         ],
+        value='Avg_Trade_Volume', 
         style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     )
 ])
@@ -120,7 +121,7 @@ layout = html.Div([
         dcc.Graph(id='map-heatmap'),
         dcc.Graph(id='country-trend', style={'display': 'none'}),
         html.Button("Return to map", id="close-button", n_clicks=0,
-                    style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999'})
+                    style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999', "color": "black", "backgroundColor": "white"})
     ]),
 ])
 
