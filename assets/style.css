@@ -1,6 +1,6 @@
 /* === GLOBAL THEME OVERRIDES === */
 body {
-    background-color: #f4f6f9; /* Soft gray background */
+    background-color: #f4f6f9; 
     font-family: 'Lato', sans-serif;
     font-size: 14px;
     color: #333;
@@ -10,7 +10,7 @@ body {
 
 /* === Sidebar Styling === */
 .sidebar {
-    background-color: #2C3E50; /* Dark blue-gray */
+    background-color: #2C3E50; 
     width: 250px;
     height: 100vh;
     padding: 20px;
@@ -44,9 +44,9 @@ body {
 }
 
 .sidebar a:hover {
-    background-color: rgba(255, 255, 255, 0.2); /* Soft highlight */
+    background-color: rgba(255, 255, 255, 0.2); 
     border-radius: 5px;
-    transition: background-color 0.3s ease-in-out; /* Smooth transition */
+    transition: background-color 0.3s ease-in-out; 
 }
 
 /* === Main Content Area === */
@@ -60,7 +60,6 @@ body {
 
 /* === Buttons === */
 button {
-    color: white;
     padding: 10px 15px;
     border: none;
     color: black;
@@ -84,13 +83,13 @@ button:hover {
 }
 
 .dropdown select {
-    color: black; /* Changes the text color inside the dropdown */
-    background-color: white; /* Ensures the dropdown remains visible */
+    color: black; 
+    background-color: white; 
 }
 
 .dropdown option {
-    color: black; /* Ensures dropdown options are readable */
-    background-color: white; /* Background color for dropdown options */
+    color: black; 
+    background-color: white; 
 }
 
 /* === Headers === */
