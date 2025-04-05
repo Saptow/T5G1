@@ -1,7 +1,7 @@
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import pandas as pd
-from apps import module1
+from apps import module1a
 
 # Load CSV and compute stats for 2025
 csv_path = "priscilla_worldmap_data.csv"
@@ -85,7 +85,7 @@ layout = html.Div([
     dbc.Row([
         dbc.Col([
             html.Div([
-                dcc.Graph(id="homepage-bargraph", figure=module1.static_bar_graph()),
+                dcc.Graph(id="homepage-bargraph", figure=module1a.static_bar_graph()),
             ], style={"cursor": "pointer"}, id="go-to-module1")
         ], width=6),
 
