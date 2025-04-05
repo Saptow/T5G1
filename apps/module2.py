@@ -5,76 +5,23 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
 import dash
-from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
-# Load data from CSV 
+from export_controls import get_export_controls, register_export_callbacks
+
 df = pd.read_csv("priscilla_worldmap_data.csv")
 
-# Static data for dropdowns 
 years = sorted(df['Year'].unique())
 countries = sorted(df['Country'].unique())
 sectors = sorted(df['Sector'].unique())
 
-# Mapping from ISO3 to Country Name 
+
 country_iso = df[['Country', 'Country Code']].drop_duplicates().set_index('Country').to_dict()['Country Code']
 iso_to_country = {v: k for k, v in country_iso.items()}
 
 app = get_app()
 app.title = "Singapore Trade Intensity Map"
 
-
-
-# layout = html.Div([
-#     html.H2("Singapore Total Trade Volume Map Viewer"),
-
-#     html.Label("Select Year Range:"),
-#     dcc.RangeSlider(
-#         id='year-range', min=min(years), max=max(years), value=[2022, 2024],
-#         marks={str(year): str(year) for year in years}, step=1
-#     ),
-
-#     html.Label("Select Sectors:"),
-#     dcc.Dropdown(
-#         id='sector-filter',
-#         options=[{'label': sector, 'value': sector} for sector in sectors],
-#         value=sectors, multi=True
-#     ),
-
-#     html.Label("Select Countries:"),
-#     dcc.Dropdown(
-#         id='country-filter',
-#         options=[{'label': country, 'value': country} for country in countries],
-#         value=countries, multi=True
-#     ),
-
-#     html.Div([
-#         html.Label("Top N Countries by Trade Volume:"),
-#         dcc.Input(id='top-n', type='number', min=1, step=1, placeholder='(optional)'),
-#     ], style={'margin-bottom': '10px'}),
-
-#     html.Div([
-#         html.Label("Metric:"),
-#         dcc.Dropdown(
-#             id='metric-toggle',
-#             options=[
-#                 {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
-#                 {'label': '% Change from Base Year', 'value': '% Change from Base'}
-#             ],
-#             value='Avg_Trade_Volume'
-#         )
-#     ]),
-
-#     html.Div(id='main-graph-container', children=[
-#         dcc.Graph(id='map-heatmap'),
-#         dcc.Graph(id='country-trend', style={'display': 'none'}),
-#         html.Button("Return to map", id="close-button", n_clicks=0,
-#                     style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999'})
-#     ]),
-# ])
-
-# === Sidebar Controls for Module 2 ===
-# === Sidebar Controls for Module 2 ===
 sidebar_controls = html.Div([
     html.H5("Trade Map Filters", className="text-muted mb-3"),
 
@@ -117,12 +64,23 @@ sidebar_controls = html.Div([
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "16px"})
 ])
 
-# === Main Layout (Graphs only) ===
 layout = html.Div([
     html.H2("Singapore Total Trade Volume Map Viewer"),
 
     html.Div(id='main-graph-container', children=[
-        dcc.Graph(id='map-heatmap'),
+        html.Div([
+            html.Div(get_export_controls(), style={
+                "position": "absolute",
+                "top": "10px",
+                "left": "10px",
+                "zIndex": "1000",
+                "backgroundColor": "white",
+                "padding": "10px",
+                "borderRadius": "8px",
+                "boxShadow": "0 2px 6px rgba(0,0,0,0.15)"
+            }),
+            dcc.Graph(id='map-heatmap')
+        ], style={"position": "relative"}),
 
         html.Div([
             dcc.Tabs(id='chart-tabs', value='line', children=[
@@ -249,3 +207,4 @@ def register_callbacks(app):
 
 app.layout = layout
 register_callbacks(app)
+register_export_callbacks(app, lambda: df, lambda: px.choropleth())
