@@ -57,17 +57,35 @@ layout = html.Div([
         for i in range(4)
     ], className="mb-3 g-3 px-3"),
 
-    dbc.Row([
-        dbc.Col([
-            html.Div([
-                dcc.Graph(id="homepage-bargraph", figure=module1a.static_bar_graph()),
-            ], style={"cursor": "pointer"}, id="go-to-module1")
-        ], width=6),
+    html.Div([
+        html.H4("Latest Market News", className="text-center mt-4 mb-3"),
+        dbc.Carousel(
+            items=[
+                {"key": "1", "src": "/assets/news1.png"},
+                {"key": "2", "src": "/assets/news2.png"},
+                {"key": "3", "src": "/assets/news3.png"},
+                {"key": "4", "src": "/assets/news4.png"},
+                {"key": "5", "src": "/assets/news5.png"},
+            ],
+            controls=True,
+            indicators=True,
+            interval=5000,
+            className="mb-5",
+            style={"maxWidth": "1500px", "height": "400px", "margin": "0 auto", "borderRadius": "10px", "boxShadow": "0 0 10px rgba(0,0,0,0.3)"}
+        )
+    ]),
 
-        dbc.Col([
-            html.Div([
-                html.Img(src="/assets/world_map.png", style={"width": "100%", "borderRadius": "10px", "cursor": "pointer"})
-            ], id="go-to-module2")
-        ], width=6),
-    ])
+    #dbc.Row([
+        #dbc.Col([
+            #html.Div([
+                #dcc.Graph(id="homepage-bargraph", figure=module1a.static_bar_graph()),
+            #], style={"cursor": "pointer"}, id="go-to-module1")
+        #], width=6),
+
+        #dbc.Col([
+            #html.Div([
+                #html.Img(src="/assets/world_map.png", style={"width": "100%", "borderRadius": "10px", "cursor": "pointer"})
+            #], id="go-to-module2")
+        #], width=6),
+    #])
 ])
