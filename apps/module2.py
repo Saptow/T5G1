@@ -1,20 +1,18 @@
-# module2.py , Trade World Map
-
-from dash import dcc, html, Input, Output, State, callback_context, get_app, State
-import dash_bootstrap_components as dbc
-import plotly.express as px
-import pandas as pd
-import dash
+from dash import Dash, dcc, html, Input, Output, State, callback_context, get_app
+from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+import pandas as pd
+import plotly.express as px
+import dash_bootstrap_components as dbc
 
 from export_controls import get_export_controls, register_export_callbacks
 
+# Load and prepare data (as previously done)
 df = pd.read_csv("priscilla_worldmap_data.csv")
 
 years = sorted(df['Year'].unique())
 countries = sorted(df['Country'].unique())
 sectors = sorted(df['Sector'].unique())
-
 
 country_iso = df[['Country', 'Country Code']].drop_duplicates().set_index('Country').to_dict()['Country Code']
 iso_to_country = {v: k for k, v in country_iso.items()}
@@ -22,6 +20,7 @@ iso_to_country = {v: k for k, v in country_iso.items()}
 app = get_app()
 app.title = "Singapore Trade Intensity Map"
 
+# Sidebar controls
 sidebar_controls = html.Div([
     html.H5("Trade Map Filters", className="text-muted mb-3"),
 
@@ -36,20 +35,22 @@ sidebar_controls = html.Div([
     dcc.Dropdown(
         id='sector-filter',
         options=[{'label': sector, 'value': sector} for sector in sectors],
-        value=sectors, multi=True, style={"color": "black", "backgroundColor": "white"}, className="mb-3"
+        value=sectors, multi=True,
+        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     ),
 
     html.Label("Select Countries:"),
     dcc.Dropdown(
         id='country-filter',
         options=[{'label': country, 'value': country} for country in countries],
-        value=countries, multi=True, style={"color": "black", "backgroundColor": "white"}, className="mb-3"
+        value=countries, multi=True,
+        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     ),
 
     html.Div([
         html.Label("Top N Countries by Trade Volume:", style={"marginRight": "10px"}),
         dcc.Input(id='top-n', type='number', min=1, step=1,
-                style={"width": "100px", "marginRight": "20px", "color": "black", "backgroundColor": "white"}),
+                  style={"width": "100px", "marginRight": "20px", "color": "black", "backgroundColor": "white"}),
 
         html.Label("Metric:", style={"marginRight": "10px"}),
         dcc.Dropdown(
@@ -62,25 +63,26 @@ sidebar_controls = html.Div([
             style={"width": "300px", "color": "black", "backgroundColor": "white"}
         )
     ], style={"display": "flex", "alignItems": "center", "marginBottom": "16px"})
-])
+], style={"padding": "20px"})
 
+# Layout (used by app)
 layout = html.Div([
     html.H2("Singapore Total Trade Volume Map Viewer"),
 
+    # Floating export controls
+    html.Div(get_export_controls(), style={
+        "position": "absolute",
+        "top": "80px",
+        "right": "30px",
+        "zIndex": "1000",
+        "backgroundColor": "white",
+        "padding": "12px",
+        "borderRadius": "10px",
+        "boxShadow": "0 2px 6px rgba(0,0,0,0.15)"
+    }),
+
     html.Div(id='main-graph-container', children=[
-        html.Div([
-            html.Div(get_export_controls(), style={
-                "position": "absolute",
-                "top": "10px",
-                "left": "10px",
-                "zIndex": "1000",
-                "backgroundColor": "white",
-                "padding": "10px",
-                "borderRadius": "8px",
-                "boxShadow": "0 2px 6px rgba(0,0,0,0.15)"
-            }),
-            dcc.Graph(id='map-heatmap')
-        ], style={"position": "relative"}),
+        dcc.Graph(id='map-heatmap'),
 
         html.Div([
             dcc.Tabs(id='chart-tabs', value='line', children=[
@@ -92,9 +94,10 @@ layout = html.Div([
 
         html.Button("Return to map", id="close-button", n_clicks=0,
                     style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999', "color": "black", "backgroundColor": "white"})
-    ]),
+    ])
 ])
 
+# === Callback registration ===
 def register_callbacks(app):
     @app.callback(
         Output('map-heatmap', 'figure'),
@@ -162,7 +165,7 @@ def register_callbacks(app):
         Input('chart-tabs', 'value')
     )
     def toggle_country_trend(clickData, close_clicks, chart_type):
-        ctx = dash.callback_context
+        ctx = callback_context
         if ctx.triggered and ctx.triggered[0]['prop_id'] == 'close-button.n_clicks':
             return px.line(title=""), {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
 
@@ -205,6 +208,7 @@ def register_callbacks(app):
 
         return fig, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}
 
+# === Final App Setup ===
 app.layout = layout
 register_callbacks(app)
 register_export_callbacks(app, lambda: df, lambda: px.choropleth())
