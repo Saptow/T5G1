@@ -74,6 +74,7 @@ app.title = "Singapore Trade Intensity Map"
 # ])
 
 # === Sidebar Controls for Module 2 ===
+# === Sidebar Controls for Module 2 ===
 sidebar_controls = html.Div([
     html.H5("Trade Map Filters", className="text-muted mb-3"),
 
@@ -119,7 +120,15 @@ layout = html.Div([
 
     html.Div(id='main-graph-container', children=[
         dcc.Graph(id='map-heatmap'),
-        dcc.Graph(id='country-trend', style={'display': 'none'}),
+
+        html.Div([
+            dcc.Tabs(id='chart-tabs', value='line', children=[
+                dcc.Tab(label='Line Chart', value='line'),
+                dcc.Tab(label='Bar Chart', value='bar'),
+            ]),
+            dcc.Graph(id='country-trend')
+        ], id='country-trend-container', style={'display': 'none'}),
+
         html.Button("Return to map", id="close-button", n_clicks=0,
                     style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999', "color": "black", "backgroundColor": "white"})
     ]),
@@ -184,13 +193,14 @@ def register_callbacks(app):
 
     @app.callback(
         Output('country-trend', 'figure'),
-        Output('country-trend', 'style'),
+        Output('country-trend-container', 'style'),
         Output('map-heatmap', 'style'),
         Output('close-button', 'style'),
         Input('map-heatmap', 'clickData'),
-        Input('close-button', 'n_clicks')
+        Input('close-button', 'n_clicks'),
+        Input('chart-tabs', 'value')
     )
-    def toggle_country_trend(clickData, close_clicks):
+    def toggle_country_trend(clickData, close_clicks, chart_type):
         ctx = dash.callback_context
         if ctx.triggered and ctx.triggered[0]['prop_id'] == 'close-button.n_clicks':
             return px.line(title=""), {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
@@ -209,20 +219,30 @@ def register_callbacks(app):
             'Import Volume': 'mean'
         }).reset_index()
 
-        fig = px.line(
-            country_df,
-            x='Year',
-            y=['Total Volume', 'Export Volume', 'Import Volume'],
-            markers=True,
-            title=f"{country} Trade Volume Breakdown"
-        )
+        if chart_type == 'line':
+            fig = px.line(
+                country_df,
+                x='Year',
+                y=['Total Volume', 'Export Volume', 'Import Volume'],
+                markers=True,
+                title=f"{country} Trade Volume Breakdown"
+            )
+        else:
+            melted = country_df.melt(id_vars='Year', value_vars=['Total Volume', 'Export Volume', 'Import Volume'],
+                                     var_name='Metric', value_name='Value')
+            fig = px.bar(
+                melted,
+                x='Year',
+                y='Value',
+                color='Metric',
+                barmode='group',
+                title=f"{country} Trade Volume Breakdown"
+            )
 
-        fig.update_traces(
-            hovertemplate='Year: %{x}<br>Value: %{y:.2f} Billion SGD<extra></extra>'
-        )
+        fig.update_traces(hovertemplate='Year: %{x}<br>Value: %{y:.2f} Billion SGD<extra></extra>')
         fig.update_layout(yaxis_title="Billion SGD", legend_title="Metric")
 
         return fig, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}
 
-app.layout = layout    
+app.layout = layout
 register_callbacks(app)
