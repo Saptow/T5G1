@@ -13,7 +13,7 @@ server = app.server
 from index import layout as index_layout
 from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c
 
-# === Top Navbar with Dropdowns (Styled) ===
+# Top Navbar with Dropdowns - might need to change dropdown style
 navbar = dbc.Navbar(
     dbc.Container([
         dbc.NavbarBrand("Dashboard", className="ms-2 text-white", style={"fontSize": "1.6rem"}),
@@ -116,7 +116,7 @@ def update_sidebar(pathname):
     else:
         return None
 
-# === Navigation from Homepage (e.g., click bar/image) ===
+# === Navigation from Homepage (e.g., click bar/image) -- include stat boxes clickability here -- 
 @app.callback(
     Output("url", "pathname"),
     [Input("go-to-module1", "n_clicks"),

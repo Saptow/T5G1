@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", message="A nonexistent object was used in an `Input` of a Dash callback.")
+
 import dash
 from dash import dcc, html, Output, Input, callback_context
 import dash_bootstrap_components as dbc
@@ -8,7 +11,7 @@ server = app.server
 
 # Import layouts
 from index import layout as index_layout
-from apps import module1, module2, module3  # Add more modules here
+from apps import module1a, module2, module3a  # Add more modules here
 
 # === Sidebar (static nav + dynamic section below) ===
 sidebar = html.Div([
@@ -26,10 +29,18 @@ sidebar = html.Div([
 
     html.Hr(),
 
-    # ✅ This is the ONLY sidebar-dynamic block (do NOT duplicate)
+    # ONLY one dynamic block - don't duplicate!!
     html.Div(id="sidebar-dynamic")
-], className= "sidebar"
-)
+], style={
+    "position": "fixed",
+    "top": 0,
+    "left": 0,
+    "bottom": 0,
+    "width": "16rem",
+    "padding": "2rem 1rem",
+    "background-color": "#f8f9fa",
+    "overflowY": "auto"
+})
 
 # === App Layout ===
 app.layout = html.Div([
@@ -42,11 +53,11 @@ app.layout = html.Div([
 @app.callback(Output("page-content", "children"), Input("url", "pathname"))
 def display_page(pathname):
     if pathname == "/module1":
-        return module1.layout
+        return module1a.layout
     elif pathname == "/module2":
         return module2.layout
     elif pathname == "/module3":
-        return module3.layout
+        return module3a.layout
     elif pathname == "/" or pathname == "":
         return index_layout
     return index_layout
@@ -58,11 +69,11 @@ def display_page(pathname):
 )
 def update_sidebar(pathname):
     if pathname == "/module1":
-        return module1.sidebar_controls
+        return module1a.sidebar_controls
     elif pathname == "/module2":
         return module2.sidebar_controls
     elif pathname == "/module3":
-        return module3.sidebar_controls
+        return module3a.sidebar_controls
     # Add additional elif blocks for future modules
     else:
         return None  # No sidebar controls on homepage
