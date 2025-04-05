@@ -9,7 +9,7 @@ import base64
 
 def get_export_controls():
     return html.Div([
-        html.Label("Export diagram/data", className="fw-bold mb-2"),
+        html.Label("Export diagram/data", className="fw-bold mb-2", style={"fontSize": "14px"}),
 
         html.Div([
             dcc.Dropdown(
@@ -20,23 +20,37 @@ def get_export_controls():
                 ],
                 placeholder="Diagram or Data",
                 value="diagram",
-                style={"width": "120px", "height": "42px", "fontSize": "15px"},
+                style={"width": "130px", "fontSize": "13px", "marginRight": "6px"},
                 className="me-2"
             ),
 
             dcc.Dropdown(
                 id="export-format",
-                placeholder="Choose export type",
-                style={"width": "120px", "height": "42px", "fontSize": "15px"},
+                placeholder="Choose type",
+                style={"width": "130px", "fontSize": "13px", "marginRight": "6px"},
                 className="me-3"
             ),
 
             html.Button("EXPORT", id="export-btn", n_clicks=0,
-                        style={"border": "1px solid black", "fontWeight": "bold", "height": "42px", "padding": "0 15px", "fontSize": "15px"})
-        ], className="d-flex align-items-center mb-4"),
+                        style={
+                            "border": "1px solid black",
+                            "fontWeight": "bold",
+                            "height": "36px",
+                            "padding": "0 12px",
+                            "fontSize": "13px",
+                            "marginTop": "2px"
+                        })
+        ], className="d-flex align-items-center"),
 
         dcc.Download(id="export-download")
-    ], style={"paddingLeft": "15px"})
+    ], style={
+        "padding": "10px",
+        "backgroundColor": "white",
+        "borderRadius": "8px",
+        "boxShadow": "0 2px 6px rgba(0,0,0,0.15)",
+        "width": "auto"
+    })
+
 
 def register_export_callbacks(app, data_getter, fig_getter):
 
