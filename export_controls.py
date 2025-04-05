@@ -7,7 +7,6 @@ import pandas as pd
 import io
 import base64
 
-
 def get_export_controls():
     return html.Div([
         html.Label("Export diagram/data", className="fw-bold mb-2"),
@@ -21,24 +20,23 @@ def get_export_controls():
                 ],
                 placeholder="Diagram or Data",
                 value="diagram",
-                style={"maxWidth": "160px"},
+                style={"width": "120px", "height": "42px", "fontSize": "15px"},
                 className="me-2"
             ),
 
             dcc.Dropdown(
                 id="export-format",
                 placeholder="Choose export type",
-                style={"maxWidth": "160px"},
+                style={"width": "120px", "height": "42px", "fontSize": "15px"},
                 className="me-3"
             ),
 
             html.Button("EXPORT", id="export-btn", n_clicks=0,
-                        style={"border": "1px solid black", "fontWeight": "bold", "height": "38px", "padding": "0 15px"})
+                        style={"border": "1px solid black", "fontWeight": "bold", "height": "42px", "padding": "0 15px", "fontSize": "15px"})
         ], className="d-flex align-items-center mb-4"),
 
         dcc.Download(id="export-download")
     ], style={"paddingLeft": "15px"})
-
 
 def register_export_callbacks(app, data_getter, fig_getter):
 
