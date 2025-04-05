@@ -99,19 +99,22 @@ sidebar_controls = html.Div([
         value=countries, multi=True, style={"color": "black", "backgroundColor": "white"}, className="mb-3"
     ),
 
-    html.Label("Top N Countries by Trade Volume:"),
-    dcc.Input(id='top-n', type='number', min=1, step=1, style={"color": "black", "backgroundColor": "white"}, className="mb-3"),
+    html.Div([
+        html.Label("Top N Countries by Trade Volume:", style={"marginRight": "10px"}),
+        dcc.Input(id='top-n', type='number', min=1, step=1,
+                style={"width": "100px", "marginRight": "20px", "color": "black", "backgroundColor": "white"}),
 
-    html.Label("Metric:"),
-    dcc.Dropdown(
-        id='metric-toggle',
-        options=[
-            {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
-            {'label': '% Change from Base Year', 'value': '% Change from Base'}
-        ],
-        value='Avg_Trade_Volume', 
-        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
-    )
+        html.Label("Metric:", style={"marginRight": "10px"}),
+        dcc.Dropdown(
+            id='metric-toggle',
+            options=[
+                {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
+                {'label': '% Change from Base Year', 'value': '% Change from Base'}
+            ],
+            value='Avg_Trade_Volume',
+            style={"width": "300px", "color": "black", "backgroundColor": "white"}
+        )
+    ], style={"display": "flex", "alignItems": "center", "marginBottom": "16px"})
 ])
 
 # === Main Layout (Graphs only) ===
