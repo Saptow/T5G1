@@ -30,18 +30,6 @@ body {
     transition: background-color 0.3s ease;
 }
 
-/* Hover effect for nav links */
-.navbar .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-}
-
-/* Active link */
-.navbar .nav-link.active {
-    background-color: #1A252F !important;
-    border-radius: 6px;
-}
-
 /* Dropdown label */
 .navbar .dropdown-toggle {
     color: white ;
