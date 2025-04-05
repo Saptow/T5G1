@@ -4,8 +4,8 @@ import os
 import time
 import copy
 import numpy as np
-from lib.logger import get_logger
-from lib.metrics import All_Metrics
+from ..lib.logger import get_logger
+from ..lib.metrics import All_Metrics
 
 class Trainer(object):
     def __init__(self, model, loss, optimizer, train_loader, val_loader, test_loader,

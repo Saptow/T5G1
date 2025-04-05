@@ -59,7 +59,7 @@ To do this, you might run into some issues installing the required packages. In 
 pip install torch_geometric
 
 # Optional dependencies:
-pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.5.0+cpu.html
+pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.6.0+cpu.html
 ```
 ## FOR WINDOWS
 Also, before you install torch_geometric_temporal, need to install visual studio build tools. You can download it from [here](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
