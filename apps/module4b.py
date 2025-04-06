@@ -3,7 +3,7 @@ from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 import pandas as pd
 
-# Load and prepare data (as previously done)
+# Load and prepare data
 df = pd.read_csv("bilateral_trade_data_2026.csv")
 
 df_2026a = df[df["Time Period"] == "2026a"]
@@ -29,13 +29,14 @@ for col in ["Export Value", "Import Value", "Total Trade Volume"]:
     ) * 100
 
 app = get_app()
-# Sidebar controls only (to be used in index.py dynamically)
-sidebar_controls = html.Div([
-    html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="mb-3"),
+
+# Full layout including controls and graph
+layout = html.Div([
+    html.H2("Deviation from Baseline Forecast After News Input", className="mb-3"),
 
     html.Div([
 
-        # Group 1: Button Toggle
+        # Button Toggle
         html.Div([
             html.P("1. Select Country/Sector:", style={"marginBottom": "2px"}),
             html.Div([
@@ -44,7 +45,7 @@ sidebar_controls = html.Div([
             ])
         ], style={"marginRight": "30px"}),
 
-        # Group 2: Dropdown for filter
+        # Dropdown for filter
         html.Div([
             html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
             dcc.Dropdown(
@@ -54,7 +55,7 @@ sidebar_controls = html.Div([
             )
         ], style={"marginRight": "30px"}),
 
-        # Group 3: Trade Type Dropdown
+        # Trade Type Dropdown
         html.Div([
             html.P("3. Select Trade Type:", style={"marginBottom": "2px"}),
             dcc.Dropdown(
@@ -68,12 +69,8 @@ sidebar_controls = html.Div([
                 style={"width": "220px"}
             )
         ])
-    ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"})
-], style={"padding": "10px"})
+    ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end", "padding": "10px"}),
 
-
-# Layout (no sidebar_controls here to avoid duplication in index.py)
-layout = html.Div([
     html.Div([
         dcc.Graph(id="dumbbell-graph", style={"marginTop": "20px"})
     ])
@@ -206,7 +203,6 @@ def register_callbacks(app):
 
         return fig
 
-# Register to current app instance
-
+# Register callbacks
 app.layout = layout 
 register_callbacks(app)
