@@ -1,11 +1,11 @@
-from dash import html, dcc, Input, Output, callback
+from dash import html, dcc, Input, Output, State, callback
 import pandas as pd
 import plotly.graph_objects as go
+import dash_daq as daq
 
-# Load the dataset
+# === Load dataset ===
 df_2026 = pd.read_csv("bilateral_trade_data_2026.csv")
 
-# Mapping for sectors
 sector_labels = {
     "Sector_1": "Food and Agriculture",
     "Sector_2": "Energy and Mining",
@@ -17,37 +17,44 @@ sector_labels = {
     "Sector_8": "Government and Others"
 }
 
-# Sidebar controls
-sidebar_controls = html.Div([
-    html.H5("Module 4C Controls", className="text-muted mb-3"),
-
-    dcc.Dropdown(
-        id='module4c-country-dropdown',
-        options=[{'label': r, 'value': r} for r in sorted(df_2026['Reporter'].unique())],
-        placeholder="Select a country",
-        className="mb-3"
-    ),
-
-    dcc.RadioItems(
-        id='module4c-groupby-radio',
-        options=[
-            {'label': 'Group by Sector', 'value': 'Sector Group'},
-            {'label': 'Group by Partner', 'value': 'Partner'}
-        ],
-        value='Sector Group',
-        inline=True,
-        className="mb-3"
-    ),
-])
-
-# Main layout
+# === Layout ===
 layout = html.Div([
     html.H2("Module 4C: Impact of Shock on Forecasted Trade", className="mb-4"),
+
+    html.Div([
+        # Country dropdown
+        dcc.Dropdown(
+            id='module4c-country-dropdown',
+            options=[{'label': r, 'value': r} for r in sorted(df_2026['Reporter'].unique())],
+            value='Australia',
+            placeholder="Select a country",
+            style={'minWidth': '250px'},
+            className="me-3"
+        ),
+
+        # Grouping switch
+        daq.ToggleSwitch(
+            id='module4c-groupby-switch',
+            label=['Sector', 'Partner'],
+            value=False,  # False = Sector
+            style={'marginTop': '5px', 'marginRight': '20px'}
+        ),
+
+        # Dynamic multi-select filter
+        dcc.Dropdown(
+            id='module4c-group-filter',
+            options=[],  # Filled dynamically
+            multi=True,
+            placeholder="Filter specific sectors or partners",
+            style={'minWidth': '300px'}
+        )
+    ], style={'display': 'flex', 'flexWrap': 'wrap', 'gap': '15px', 'marginBottom': '20px'}),
+
     dcc.Graph(id='module4c-graph')
 ])
 
 
-# Utility function
+# === Utility ===
 def calculate_percentages(data, group_by):
     grouped = data.groupby(group_by, as_index=False).agg({
         'volume': 'sum',
@@ -67,28 +74,46 @@ def calculate_percentages(data, group_by):
     return grouped
 
 
-# Callback logic
+# === Dynamic Filter Options ===
+@callback(
+    Output('module4c-group-filter', 'options'),
+    Input('module4c-country-dropdown', 'value'),
+    Input('module4c-groupby-switch', 'value')
+)
+def update_filter_options(selected_country, is_partner):
+    groupby_field = "Partner" if is_partner else "Sector Group"
+    filtered = df_2026[df_2026["Reporter"] == selected_country]
+    unique_values = sorted(filtered[groupby_field].unique())
+
+    if groupby_field == "Sector Group":
+        return [{'label': sector_labels.get(val, val), 'value': val} for val in unique_values]
+    return [{'label': val, 'value': val} for val in unique_values]
+
+
+# === Main Graph Callback ===
 @callback(
     Output('module4c-graph', 'figure'),
     Input('module4c-country-dropdown', 'value'),
-    Input('module4c-groupby-radio', 'value')
+    Input('module4c-groupby-switch', 'value'),
+    Input('module4c-group-filter', 'value')
 )
-def update_module4c_graph(selected_country, groupby_field):
+def update_module4c_graph(selected_country, is_partner, selected_filters):
     if not selected_country:
         return go.Figure()
 
-    # Filter to selected country
+    groupby_field = "Partner" if is_partner else "Sector Group"
     df = df_2026[df_2026["Reporter"] == selected_country]
 
-    # Separate time periods
+    # Filter by sector/partner if specified
+    if selected_filters:
+        df = df[df[groupby_field].isin(selected_filters)]
+
     df_a = df[df["Time Period"] == "2026a"].copy()
     df_b = df[df["Time Period"] == "2026b"].copy()
 
-    # Rename columns for merging
     df_a = df_a.rename(columns={"Total Trade Volume": "previous_volume"})
     df_b = df_b.rename(columns={"Total Trade Volume": "volume"})
 
-    # Merge a & b
     merged = pd.merge(
         df_a[["Reporter", groupby_field, "previous_volume"]],
         df_b[["Reporter", groupby_field, "volume"]],
@@ -96,15 +121,17 @@ def update_module4c_graph(selected_country, groupby_field):
         how="inner"
     )
 
-    # Calculate percentages and changes
+    if merged.empty:
+        return go.Figure()
+
     agg = calculate_percentages(merged, groupby_field)
 
-    # Labels
+    # Apply label map for sectors
     agg["label"] = agg[groupby_field]
     if groupby_field == "Sector Group":
         agg["label"] = agg["label"].map(sector_labels)
 
-    # Build scatter plot
+    # === Main bubble plot ===
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
@@ -127,10 +154,21 @@ def update_module4c_graph(selected_country, groupby_field):
             "Predicted Share (2026a): %{x:.2f}%<br>" +
             "Shock Impact (Δ Share): %{y:.2f}%<br>" +
             "<extra></extra>"
-        )
+        ),
+        showlegend=False  # ✅ Hide unwanted legend entry
     ))
 
-    # Dotted line = avg change
+    # === Dot centers for clarity ===
+    fig.add_trace(go.Scatter(
+        x=agg["percentage"],
+        y=agg["change"],
+        mode='markers',
+        marker=dict(size=6, color='black', symbol='circle'),
+        hoverinfo='skip',
+        showlegend=False
+    ))
+
+    # === Average line ===
     avg_y = agg["change"].mean()
     fig.add_shape(
         type="line",
@@ -150,7 +188,7 @@ def update_module4c_graph(selected_country, groupby_field):
     )
 
     fig.update_layout(
-        title=f"Shock Impact on Forecasted Trade by {'Sector' if groupby_field == 'Sector Group' else 'Partner'} for {selected_country}",
+        title=f"Shock Impact on Forecasted Trade by {'Partner' if is_partner else 'Sector'} for {selected_country}",
         xaxis_title="% Share of Trade in 2026a (No Shock)",
         yaxis_title="Shock Impact (% Share Change: a - b)",
         plot_bgcolor='white',
@@ -159,3 +197,5 @@ def update_module4c_graph(selected_country, groupby_field):
     )
 
     return fig
+
+sidebar_controls = html.Div([])
