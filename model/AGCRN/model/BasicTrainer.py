@@ -8,7 +8,8 @@ from ..lib.logger import get_logger
 from ..lib.metrics import All_Metrics
 
 class Trainer(object):
-    def __init__(self, model, loss, optimizer, train_loader, val_loader, test_loader,
+    def __init__(self, model, loss, optimizer, train_loader, val_loader, 
+                #  test_loader,
                  scaler, args, lr_scheduler=None):
         super(Trainer, self).__init__()
         self.model = model
@@ -16,7 +17,7 @@ class Trainer(object):
         self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
-        self.test_loader = test_loader
+        # self.test_loader = test_loader
         self.scaler = scaler
         self.args = args
         self.lr_scheduler = lr_scheduler
@@ -46,7 +47,13 @@ class Trainer(object):
                 output = self.model(data, target, teacher_forcing_ratio=0.)
                 if self.args.real_value:
                     label = self.scaler.inverse_transform(label)
-                loss = self.loss(output.cuda(), label)
+                last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
+                print("output shape:", output.shape)
+                print("label shape:", label.shape)
+                print('last_output shape:', last_output.shape)
+
+                loss= self.loss(last_output, label)
+                # loss = self.loss(output, label)
                 #a whole batch of Metr_LA is filtered
                 if not torch.isnan(loss):
                     total_val_loss += loss.item()
@@ -71,9 +78,15 @@ class Trainer(object):
                 teacher_forcing_ratio = 1.
             #data and target shape: B, T, N, F; output shape: B, T, N, F
             output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio)
+            # Extract only the last time step along the horizon dimension
+            last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
             if self.args.real_value:
                 label = self.scaler.inverse_transform(label)
-            loss = self.loss(output.cuda(), label)
+            print("output shape:", output.shape)
+            print("label shape:", label.shape)
+            print('last_output shape:', last_output.shape)
+            loss = self.loss(last_output, label)
+            # loss=self.loss(output, label)
             loss.backward()
 
             # add max grad clipping
@@ -106,10 +119,10 @@ class Trainer(object):
             train_epoch_loss = self.train_epoch(epoch)
             #print(time.time()-epoch_time)
             #exit()
-            if self.val_loader == None:
-                val_dataloader = self.test_loader
-            else:
-                val_dataloader = self.val_loader
+            # if self.val_loader == None:
+            #     val_dataloader = self.test_loader
+            
+            val_dataloader = self.val_loader
             val_epoch_loss = self.val_epoch(epoch, val_dataloader)
 
             #print('LR:', self.optimizer.param_groups[0]['lr'])
@@ -149,7 +162,7 @@ class Trainer(object):
         #test
         self.model.load_state_dict(best_model)
         #self.val_epoch(self.args.epochs, self.test_loader)
-        self.test(self.model, self.args, self.test_loader, self.scaler, self.logger)
+        # self.test(self.model, self.args, self.test_loader, self.scaler, self.logger)
 
     def save_checkpoint(self):
         state = {
