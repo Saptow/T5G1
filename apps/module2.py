@@ -5,8 +5,6 @@ import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
 
-from export_controls import get_export_controls, register_export_callbacks
-
 # Load and prepare data (as previously done)
 df = pd.read_csv("priscilla_worldmap_data.csv")
 
@@ -20,68 +18,78 @@ iso_to_country = {v: k for k, v in country_iso.items()}
 app = get_app()
 app.title = "Singapore Trade Intensity Map"
 
-# Sidebar controls
-sidebar_controls = html.Div([
-    html.H5("Trade Map Filters", className="text-muted mb-3"),
-
-    html.Label("Select Year Range:"),
-    dcc.RangeSlider(
-        id='year-range', min=min(years), max=max(years), value=[2022, 2024],
-        marks={str(year): str(year) for year in years}, step=1,
-        className="mb-3"
-    ),
-
-    html.Label("Select Sectors:"),
-    dcc.Dropdown(
-        id='sector-filter',
-        options=[{'label': sector, 'value': sector} for sector in sectors],
-        value=sectors, multi=True,
-        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
-    ),
-
-    html.Label("Select Countries:"),
-    dcc.Dropdown(
-        id='country-filter',
-        options=[{'label': country, 'value': country} for country in countries],
-        value=countries, multi=True,
-        style={"color": "black", "backgroundColor": "white"}, className="mb-3"
-    ),
+layout = html.Div([
+    html.H2("Singapore Total Trade Volume Map Viewer", style={"margin": "20px"}),
 
     html.Div([
-        html.Label("Top N Countries by Trade Volume:", style={"marginRight": "10px"}),
-        dcc.Input(id='top-n', type='number', min=1, step=1,
-                  style={"width": "100px", "marginRight": "20px", "color": "black", "backgroundColor": "white"}),
+        html.Div([
+            html.Div([
+                html.Label("Select Base Year:"),
+                dcc.Dropdown(
+                    id='base-year',
+                    options=[{'label': str(y), 'value': y} for y in years],
+                    value=2022,
+                    style={"width": "270px"}
+                )
+            ], style={"flex": "1", "marginRight": "15px"}),
 
-        html.Label("Metric:", style={"marginRight": "10px"}),
+            html.Div([
+                html.Label("Select Year to Compare (Optional):"),
+                dcc.Dropdown(
+                    id='compare-year',
+                    options=[{'label': str(y), 'value': y} for y in years],
+                    placeholder="Show base year if left empty",
+                    style={"width": "270px"}
+                )
+            ], style={"flex": "1", "marginRight": "15px"}),
+
+            html.Div([
+                html.Label("Metric:"),
+                dcc.Dropdown(
+                    id='metric-toggle',
+                    options=[
+                        {'label': 'Change in Total Trade Volume', 'value': 'Change'},
+                        {'label': '% Change from Base Year', 'value': 'Percent Change'}
+                    ],
+                    value='Change',
+                    style={"width": "270px"}
+                )
+            ], style={"flex": "1", "marginRight": "15px"}),
+
+            html.Div([
+                html.Label("Top N Countries:"),
+                dcc.Input(
+                    id='top-n',
+                    type='number',
+                    min=1,
+                    step=1,
+                    style={"width": "100px"}
+                )
+            ], style={"flex": "1"})
+        ], style={"display": "flex", "flexWrap": "wrap", "gap": "10px", "marginBottom": "20px"}),
+
+        html.Label("Select Sectors:"),
         dcc.Dropdown(
-            id='metric-toggle',
-            options=[
-                {'label': 'Total Trade Volume', 'value': 'Avg_Trade_Volume'},
-                {'label': '% Change from Base Year', 'value': '% Change from Base'}
-            ],
-            value='Avg_Trade_Volume',
-            style={"width": "300px", "color": "black", "backgroundColor": "white"}
+            id='sector-filter',
+            options=[{'label': s, 'value': s} for s in sectors],
+            value=sectors,
+            multi=True,
+            style={"backgroundColor": "white"},
+            className="mb-3"
+        ),
+
+        html.Label("Select Countries:"),
+        dcc.Dropdown(
+            id='country-filter',
+            options=[{'label': c, 'value': c} for c in countries],
+            value=countries,
+            multi=True,
+            style={"backgroundColor": "white"},
+            className="mb-3"
         )
-    ], style={"display": "flex", "alignItems": "center", "marginBottom": "16px"})
-], style={"padding": "20px"})
+    ], style={"padding": "0 40px"}),
 
-# Layout (used by app)
-layout = html.Div([
-    html.H2("Singapore Total Trade Volume Map Viewer"),
-
-    # Floating export controls
-    html.Div(get_export_controls(), style={
-        "position": "absolute",
-        "top": "80px",
-        "right": "30px",
-        "zIndex": "1000",
-        "backgroundColor": "white",
-        "padding": "12px",
-        "borderRadius": "10px",
-        "boxShadow": "0 2px 6px rgba(0,0,0,0.15)"
-    }),
-
-    html.Div(id='main-graph-container', children=[
+    html.Div([
         dcc.Graph(id='map-heatmap'),
 
         html.Div([
@@ -93,66 +101,74 @@ layout = html.Div([
         ], id='country-trend-container', style={'display': 'none'}),
 
         html.Button("Return to map", id="close-button", n_clicks=0,
-                    style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999', "color": "black", "backgroundColor": "white"})
-    ])
+                    style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999',
+                           "color": "black", "backgroundColor": "white"})
+    ], style={"padding": "0 40px"})
 ])
+
 
 # === Callback registration ===
 def register_callbacks(app):
     @app.callback(
         Output('map-heatmap', 'figure'),
-        Input('year-range', 'value'),
+        Input('base-year', 'value'),
+        Input('compare-year', 'value'),
         Input('sector-filter', 'value'),
         Input('country-filter', 'value'),
         Input('metric-toggle', 'value'),
         Input('top-n', 'value')
     )
-    def update_map(year_range, selected_sectors, selected_countries, selected_metric, top_n):
-        start_year, end_year = year_range
+    def update_map(base_year, compare_year, selected_sectors, selected_countries, selected_metric, top_n):
+        if not base_year:
+            raise PreventUpdate
+
         filtered = df[
-            (df['Year'] >= start_year) & (df['Year'] <= end_year) &
-            (df['Sector'].isin(selected_sectors)) & (df['Country'].isin(selected_countries))
+            (df['Year'].isin([base_year, compare_year] if compare_year else [base_year])) &
+            (df['Sector'].isin(selected_sectors)) &
+            (df['Country'].isin(selected_countries))
         ]
 
-        grouped = filtered.groupby(['Country', 'Country Code', 'Lat', 'Lon', 'Year']).agg({
-            'Total Volume': 'first', 'SG GDP': 'first', 'Trade Intensity': 'first'
-        }).reset_index()
+        grouped = filtered.groupby(['Country', 'Country Code', 'Lat', 'Lon', 'Year'])['Total Volume'].sum().reset_index()
+        pivoted = grouped.pivot(index=['Country', 'Country Code', 'Lat', 'Lon'], columns='Year', values='Total Volume').reset_index()
 
-        summary = grouped.groupby(['Country', 'Country Code', 'Lat', 'Lon']).agg(
-            Avg_Trade_Volume=('Total Volume', 'mean'),
-            Avg_GDP=('SG GDP', 'mean'),
-            Avg_Intensity=('Trade Intensity', 'mean'),
-            Base_Trade_Volume=('Total Volume', lambda x: x.iloc[0])
-        ).reset_index()
+        if compare_year:
+            pivoted['Change'] = pivoted[compare_year] - pivoted[base_year]
+            pivoted['Percent Change'] = ((pivoted[compare_year] - pivoted[base_year]) / pivoted[base_year]) * 100
+        else:
+            pivoted['Change'] = pivoted[base_year]
+            pivoted['Percent Change'] = 0
 
-        summary['% Change from Base'] = (
-            (summary['Avg_Trade_Volume'] - summary['Base_Trade_Volume']) / summary['Base_Trade_Volume']
-        ).round(4)
-
-        summary['Hover Text'] = summary.apply(
+        # Ensure hover text is passed correctly into custom_data as a list
+        pivoted['hover'] = pivoted.apply(
             lambda row: f"Country: {row['Country']}<br>"
-                        f"Total Volume: {row['Avg_Trade_Volume']:.2f} Billion SGD<br>"
-                        f"Trade Intensity: {row['Avg_Intensity']:.2%}", axis=1
-        )
+                        + (f"% Change: {row['Percent Change']:.2f}%<br>" if compare_year else '')
+                        + (f"Change in Trade Volume: {row['Change']:.2f}<br>" if compare_year else '')
+                        + (f"Base Year ({base_year}) Volume: {row.get(base_year, 0):.2f}<br>")
+                        + (f"Comparison Year ({compare_year}) Volume: {row.get(compare_year, 0):.2f}" if compare_year else '')
+                        + "<extra></extra>", axis=1)
 
         if top_n:
-            summary = summary.nlargest(top_n, 'Avg_Trade_Volume')
+            sort_col = 'Change' if selected_metric == 'Change' else 'Percent Change'
+            pivoted = pivoted.sort_values(sort_col, ascending=False).head(top_n)
 
         fig = px.choropleth(
-            summary,
+            pivoted,
             locations="Country Code",
             color=selected_metric,
-            hover_name="Country",
-            hover_data=None,
-            color_continuous_scale=['green', 'orange', 'red'],
-            locationmode="ISO-3"
+            locationmode="ISO-3",
+            color_continuous_scale=['red', 'orange', 'green'],
+            custom_data=['hover']
         )
-        fig.update_traces(hovertemplate=summary['Hover Text'])
+
+        fig.update_traces(hovertemplate='%{customdata[0]}')
+
         fig.update_geos(fitbounds="locations")
         fig.update_layout(
-            height=600, margin={"r": 0, "t": 40, "l": 0, "b": 0}, mapbox_style="carto-positron"
+            height=600,
+            margin={"r": 0, "t": 40, "l": 0, "b": 0},
+            mapbox_style="carto-positron"
         )
-        fig.update_coloraxes(colorbar_title="Selected Metric")
+        fig.update_coloraxes(colorbar_title=selected_metric)
         return fig
 
     @app.callback(
@@ -211,4 +227,3 @@ def register_callbacks(app):
 # === Final App Setup ===
 app.layout = layout
 register_callbacks(app)
-register_export_callbacks(app, lambda: df, lambda: px.choropleth())
