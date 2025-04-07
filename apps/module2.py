@@ -3,6 +3,7 @@ from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
+import dash
 
 # Load and prepare data
 df = pd.read_csv("priscilla_worldmap_data.csv")
@@ -87,9 +88,9 @@ layout = html.Div([
         )
     ], style={"padding": "0 40px"}),
 
-    html.Div([
-        dcc.Graph(id='map-heatmap')
-    ]),
+    # html.Div([
+    #     dcc.Graph(id='map-heatmap')
+    # ]),
 
     html.Div([
         dcc.Tabs(id='chart-tabs', value='line', children=[
@@ -101,7 +102,23 @@ layout = html.Div([
 
     html.Button("Return to map", id="close-button", n_clicks=0,
                 style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999',
-                       "color": "black", "backgroundColor": "white"})
+                       "color": "black", "backgroundColor": "white"}),
+
+    html.Div(id="tab-warning2", className="text-danger mb-2 text-center"),
+
+    dcc.Tabs(id="module2-tabs", value="historical", children=[
+         dcc.Tab(label="Historical", value="historical"),
+         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
+     ]),
+    
+    html.Div(id="module2-tabs-container"),
+
+    html.Div(id="module2-tab-content", className="mt-3"),
+    # === Hidden dummy components to make Dash recognize outputs ===
+    html.Div([
+        html.Div(id='sector-title2', style={'display': 'none'}),
+        dcc.Graph(id='map-heatmap', style={'display': 'none'}),
+    ], style={'display': 'none'})
 ])
 
 app = get_app()
@@ -224,6 +241,41 @@ def register_callbacks(app):
         fig.update_layout(yaxis_title="Billion SGD", legend_title="Metric")
 
         return fig, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}
+
+@app.callback(
+    Output("prediction-tab2", "disabled"),
+    Input("input-uploaded", "data"),
+    #prevent_initial_call=True
+)
+def toggle_prediction_tab(uploaded):
+    return not uploaded
+
+@app.callback(
+    Output("module2-tabs", "value"),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=True
+)
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
+
+@app.callback(
+    Output("module2-tab-content", "children"),
+    Input("module2-tabs", "value")
+)
+def render_tab_content(tab):
+    if tab == "historical":
+        return html.Div([
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title2", className="text-center mb-2"),
+            dcc.Graph(id='map-heatmap', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+        ])
+    elif tab == "prediction":
+        return html.Div([
+            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+        ])
 
 app.layout = layout
 register_callbacks(app)
