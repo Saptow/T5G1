@@ -4,6 +4,7 @@ warnings.filterwarnings("ignore", message="A nonexistent object was used in an `
 import dash
 from dash import dcc, html, Output, Input, callback_context, State
 import dash_bootstrap_components as dbc
+from dash import ctx
 
 # Initialize
 app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.LUX])
@@ -45,6 +46,8 @@ from apps import module1a, module1b, module2, module3a, module3b, module4a, modu
 #     fixed="top",
 #     className="mb-4 px-4"
 # )
+
+### For uncommenting 
 
 navbar = dbc.Navbar(
     dbc.Container([
@@ -93,12 +96,22 @@ navbar = dbc.Navbar(
         # Clickable article images
         html.Div([
             html.H5("Or choose a sample article:"),
-            dbc.Row([
-                dbc.Col(html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0, style={"cursor": "pointer"}), width=4),
-                dbc.Col(html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0, style={"cursor": "pointer"}), width=4),
-                dbc.Col(html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0, style={"cursor": "pointer"}), width=4),
-            ], className="g-2"),
-        ])
+
+            html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0,
+             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+            html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0,
+             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+            html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0,
+             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+        ]), 
+        #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
+        # html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
+        # html.Div(id="input-status-message", className="mt-2"),
+        html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
+        html.Div(id="input-status-message", className="mt-2 text-muted"),
+
     ],
 )
 ,
@@ -110,15 +123,101 @@ navbar = dbc.Navbar(
 )
 
 
-# === App Layout ===
-app.layout = html.Div([
-    dcc.Location(id="url"),
-    dcc.Store(id="input-uploaded", data=False),  # Initial state: not uploaded
-    dcc.Store(id="uploaded-url", data=None),     # to track the exact URL or image clicked
-    navbar,
-    html.Div(id="sidebar-dynamic", style={"margin": "1rem 2rem"}),
-    html.Div(id="page-content", style={"padding": "2rem 2rem 2rem 2rem", "marginTop": "5rem"})
-])
+
+# # === App Layout ===
+# app.layout = html.Div([
+#     dcc.Location(id="url"),
+#     dcc.Store(id="uploaded-url"),
+#     dcc.Store(id="input-uploaded", data=False),  # Initial state: not uploaded
+#     #dcc.Store(id="uploaded-url", data=None),     # to track the exact URL or image clicked
+#     navbar,
+#     dbc.Offcanvas(
+#         id="predict-offcanvas",
+#         title="Prediction Input",
+#         is_open=False,
+#         placement="end",
+#         children=[
+#             dbc.InputGroup([
+#                 dbc.Input(id="news-url-input", placeholder="Paste URL here...", type="url"),
+#                 dbc.Button("Go", id="submit-url", n_clicks=0, color="primary"),
+#             ], className="mb-4"),
+
+#             html.Hr(),
+
+#             html.Div([
+#                 html.H5("Or choose a sample article:"),
+
+#                 html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0,
+#                          style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+#                 html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0,
+#                          style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+#                 html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0,
+#                          style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+#             ])
+#         ]
+#     ),
+
+#     html.Div(id="sidebar-dynamic", style={"margin": "1rem 2rem"}),
+#     html.Div(id="page-content", style={"padding": "2rem 2rem 2rem 2rem", "marginTop": "5rem"})
+# ])
+
+# === App Layout Function ===
+def serve_layout():
+    return html.Div([
+        dcc.Location(id="url"),
+        dcc.Store(id="uploaded-url"),
+        dcc.Store(id="input-uploaded", data=False, storage_type = "session"),
+
+        navbar,  # Navbar includes the Predict button
+
+        dbc.Offcanvas(
+            #id="predict-offcanvas",
+            title="Prediction Input",
+            is_open=False,
+            placement="end",
+            children=[
+                # dbc.InputGroup([
+                #     dbc.Input(id="news-url-input", placeholder="Paste URL here...", type="url"),
+                #     dbc.Button("Go", id="submit-url", n_clicks=0, color="primary"),
+                # ], className="mb-4"),
+
+                html.Hr(),
+
+                html.Div([
+                    html.H5("Or choose a sample article:"),
+
+                    html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0,
+                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+                    html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0,
+                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+
+                    html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0,
+                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+                ]),
+
+                #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
+                #html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
+                #html.Div(id="input-status-message", className="mt-2"),
+
+            ]
+        ),
+
+        html.Div(id="sidebar-dynamic", style={"margin": "1rem 2rem"}),
+        html.Div(id="page-content", style={"padding": "2rem 2rem 2rem 2rem", "marginTop": "5rem"}),
+        # Hidden components to prevent "nonexistent object" errors
+        html.Div([
+            html.Button(id="submit-url", style={"display": "none"}),
+            html.Img(id="article-img-1", style={"display": "none"}),
+            html.Img(id="article-img-2", style={"display": "none"}),
+            html.Img(id="article-img-3", style={"display": "none"}),
+        ], style={"display": "none"})
+    ])
+
+app.layout = serve_layout  # Set the dynamic layout
+
 
 # === Page Router ===
 @app.callback(Output("page-content", "children"), Input("url", "pathname"))
@@ -191,9 +290,37 @@ def toggle_offcanvas(n_clicks):
         return True
     return False
 
+# @app.callback(
+#     Output("input-uploaded", "data"),
+#     Output("uploaded-url", "data"),
+#     Input("submit-url", "n_clicks"),
+#     Input("article-img-1", "n_clicks"),
+#     Input("article-img-2", "n_clicks"),
+#     Input("article-img-3", "n_clicks"),
+#     State("news-url-input", "value"),
+#     prevent_initial_call=True
+# )
+# def handle_input_submission(n_go, n1, n2, n3, url_value):
+#     ctx_id = callback_context.triggered_id
+
+#     if ctx_id == "submit-url" and url_value and url_value.strip():
+#         return True, url_value.strip()
+#     elif ctx_id == "article-img-1":
+#         return True, "https://sample-article1.com"
+#     elif ctx_id == "article-img-2":
+#         return True, "https://sample-article2.com"
+#     elif ctx_id == "article-img-3":
+#         return True, "https://sample-article3.com"
+    
+#     return dash.no_update, dash.no_update
+
+
+
+
 @app.callback(
-    Output("input-uploaded", "data"),
+    Output("input-uploaded", "data", allow_duplicate=True),
     Output("uploaded-url", "data"),
+    Output("predict-confirmation", "children"),
     Input("submit-url", "n_clicks"),
     Input("article-img-1", "n_clicks"),
     Input("article-img-2", "n_clicks"),
@@ -201,18 +328,56 @@ def toggle_offcanvas(n_clicks):
     State("news-url-input", "value"),
     prevent_initial_call=True
 )
-def handle_input_submission(n_url, n1, n2, n3, url_value):
-    ctx = callback_context.triggered_id
-    if ctx == "submit-url" and url_value:
-        return True, url_value
-    elif ctx == "article-img-1":
-        return True, "https://sample-article1.com"
-    elif ctx == "article-img-2":
-        return True, "https://sample-article2.com"
-    elif ctx == "article-img-3":
-        return True, "https://sample-article3.com"
-    return dash.no_update
+def handle_input_submission(n_go, n1, n2, n3, url_value):
+    ctx_id = callback_context.triggered_id
+    if ctx_id == "submit-url" and url_value and url_value.strip():
+        return True, url_value.strip(), "✅ Input successfully registered."
+    elif ctx_id == "article-img-1":
+        return True, "https://sample-article1.com", "✅ Sample article 1 selected."
+    elif ctx_id == "article-img-2":
+        return True, "https://sample-article2.com", "✅ Sample article 2 selected."
+    elif ctx_id == "article-img-3":
+        return True, "https://sample-article3.com", "✅ Sample article 3 selected."
+    
+    return dash.no_update, dash.no_update, dash.no_update
 
+@app.callback(
+    Output("input-status-message", "children", allow_duplicate=False),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=False
+)
+def set_default_status(uploaded):
+    if uploaded:
+        return "✅ Input already registered"
+    else:
+        return "ℹ️ No article uploaded yet"
+
+
+# @app.callback(
+#     Output("input-status-message", "children"),
+#     Output("input-uploaded", "data", allow_duplicate=True),
+#     Output("uploaded-url", "data"),
+#     Output("predict-confirmation", "children"),
+#     Input("submit-url", "n_clicks"),
+#     Input("article-img-1", "n_clicks"),
+#     Input("article-img-2", "n_clicks"),
+#     Input("article-img-3", "n_clicks"),
+#     State("news-url-input", "value"),
+#     prevent_initial_call=True
+# )
+# def handle_input_submission(n_go, n1, n2, n3, url_value):
+#     triggered_id = ctx.triggered_id
+
+#     if triggered_id == "submit-url" and url_value and url_value.strip():
+#         return html.Span("✅ Input registered", className="text-success"), True, url_value.strip(), "✅ Input successfully registered."
+#     elif triggered_id == "article-img-1":
+#         return html.Span("✅ Sample article 1 selected", className="text-success"), True, "https://sample-article1.com", "✅ Sample article 1 selected."
+#     elif triggered_id == "article-img-2":
+#         return html.Span("✅ Sample article 2 selected", className="text-success"), True, "https://sample-article2.com", "✅ Sample article 2 selected."
+#     elif triggered_id == "article-img-3":
+#         return html.Span("✅ Sample article 3 selected", className="text-success"), True, "https://sample-article3.com", "✅ Sample article 3 selected."
+
+#     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 # === Run App ===
 if __name__ == '__main__':

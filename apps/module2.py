@@ -227,3 +227,5 @@ def register_callbacks(app):
 
 app.layout = layout
 register_callbacks(app)
+
+sidebar_controls  = html.Div([])

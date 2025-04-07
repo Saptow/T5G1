@@ -58,7 +58,7 @@ sidebar_controls = html.Div([])
 
 
 layout = html.Div([
-    dcc.Store(id="input-uploaded"),
+    #dcc.Store(id="input-uploaded"),
     dcc.Store(id="trade-type-select1b", data='export'),
     dcc.Store(id="display-type1b", data='volume'),
 
@@ -130,12 +130,21 @@ layout = html.Div([
 
     html.Div(id="tab-warning1b", className="text-danger mb-2 text-center"),
 
-    dcc.Tabs(id="module1b-tabs", value="historical", children=[
-        dcc.Tab(label="Historical", value="historical"),
-        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
-    ]),
+    # dcc.Tabs(id="module1b-tabs", value="historical", children=[
+    #     dcc.Tab(label="Historical", value="historical"),
+    #     dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
+    # ]),
+    
+    html.Div(id="module1b-tabs-container"),
 
-    html.Div(id="module1b-tab-content", className="mt-3")
+    html.Div(id="module1b-tab-content", className="mt-3"),
+    # === Hidden dummy components to make Dash recognize outputs ===
+    html.Div([
+        html.Div(id='sector-title1b', style={'display': 'none'}),
+        dcc.Graph(id='sector-treemap1b', style={'display': 'none'}),
+        html.Div(id='country-title1b', style={'display': 'none'}),
+        dcc.Graph(id='country-treemap1b', style={'display': 'none'})
+    ], style={'display': 'none'})
 ])
 
 # layout = html.Div([
@@ -206,7 +215,7 @@ def toggle_display_type(n_volume, n_percentage):
 @app.callback(
     Output("prediction-tab1b", "disabled"),
     Input("input-uploaded", "data"),
-    prevent_initial_call=True
+    #prevent_initial_call=True
 )
 def toggle_prediction_tab(uploaded):
     return not uploaded
@@ -406,3 +415,13 @@ def generate_bar_chart(df, x_col, y_col, previous_col):
                       plot_bgcolor='white', paper_bgcolor='white',
                       margin=dict(t=30, l=10, r=10, b=10))
     return fig
+
+@app.callback(
+    Output("module1b-tabs-container", "children"),
+    Input("input-uploaded", "data")
+)
+def build_tabs(uploaded):
+    return dcc.Tabs(id="module1b-tabs", value="historical", children=[
+        dcc.Tab(label="Historical", value="historical"),
+        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=not uploaded),
+    ])

@@ -39,12 +39,12 @@ card_titles = [stat_1_title, stat_2_title, stat_3_title, ""]
 card_values = [stat_1_value, stat_2_value, stat_3_value, "Year 2025"]
 
 layout = html.Div([
-    html.Div([
-        dbc.InputGroup([
-            dbc.Input(id="news-url", placeholder="Paste news URL link...", type="url"),
-            dbc.Button("Go", id="submit-url", color="primary")
-        ], className="mb-4", style={"maxWidth": "600px", "margin": "0 auto"}),
-    ]),
+    # html.Div([
+    #     dbc.InputGroup([
+    #         dbc.Input(id="news-url", placeholder="Paste news URL link...", type="url"),
+    #         dbc.Button("Go", id="submit-url", color="primary")
+    #     ], className="mb-4", style={"maxWidth": "600px", "margin": "0 auto"}),
+    # ]),
 
     dbc.Row([
         dbc.Col(dbc.Card([
