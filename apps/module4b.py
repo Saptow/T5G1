@@ -15,8 +15,37 @@ app = get_app()
 layout = html.Div([
     html.H4("Geopolitical Distance vs. Total Trade Over Time", className="mb-4"),
 
-    dcc.Graph(id="geo-trade-chart", style={"height": "600px"}),
-], className="p-4")
+    html.Div([
+    html.Label("Select a Country:", className="fw-bold"),
+
+    dcc.Dropdown(
+        id="country-selector",
+        options=[{"label": c, "value": c} for c in sorted(df["Country"].unique())],
+        value="Germany",  # default
+        style={"width": "300px"}
+        )
+    ]),
+
+    html.Div(id="tab-warning4a", className="text-danger mb-2 text-center"),
+
+    dcc.Tabs(id="module4b-tabs", value="historical", children=[
+         dcc.Tab(label="Historical", value="historical"),
+         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4b", disabled=True),
+     ]),
+    
+    html.Div(id="module4b-tabs-container"),
+
+    html.Div(id="module4b-tab-content", className="mt-3"),
+    # === Hidden dummy components to make Dash recognize outputs ===
+    html.Div([
+        html.Div(id='sector-title4b', style={'display': 'none'}),
+        dcc.Graph(id='geo-trade-chart', style={'display': 'none'}),
+    ], style={'display': 'none'})
+
+])
+
+    #dcc.Graph(id="geo-trade-chart", style={"height": "600px"}),
+# , className="p-4")
 
 # Callback
 @app.callback(
@@ -88,16 +117,53 @@ def update_geo_trade_chart(selected_country):
 
     return fig
 
+
+@app.callback(
+    Output("prediction-tab4b", "disabled"),
+    Input("input-uploaded", "data"),
+    #prevent_initial_call=True
+)
+def toggle_prediction_tab(uploaded):
+    return not uploaded
+
+@app.callback(
+    Output("module4b-tabs", "value"),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=True
+)
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
+
+@app.callback(
+    Output("module4b-tab-content", "children"),
+    Input("module4b-tabs", "value")
+)
+def render_tab_content(tab):
+    if tab == "historical":
+        return html.Div([
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title4b", className="text-center mb-2"),
+            dcc.Graph(id='geo-trade-chart', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+        ])
+    elif tab == "prediction":
+        return html.Div([
+            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+        ])
+    
+
 # Topbar Controls (should only be visible when module is selected) 
 
 sidebar_controls = html.Div([
-    html.Label("Select a Country:", className="fw-bold"),
-        dcc.Dropdown(
-            id="country-selector",
-            options=[{"label": c, "value": c} for c in sorted(df["Country"].unique())],
-            value="Germany",  # default
-            style={"width": "300px"}
-        ),
+    # html.Label("Select a Country:", className="fw-bold"),
+    #     dcc.Dropdown(
+    #         id="country-selector",
+    #         options=[{"label": c, "value": c} for c in sorted(df["Country"].unique())],
+    #         value="Germany",  # default
+    #         style={"width": "300px"}
+    #     ),
     ], className="mb-4"),
     
         
