@@ -130,10 +130,10 @@ layout = html.Div([
 
     html.Div(id="tab-warning1b", className="text-danger mb-2 text-center"),
 
-    # dcc.Tabs(id="module1b-tabs", value="historical", children=[
-    #     dcc.Tab(label="Historical", value="historical"),
-    #     dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
-    # ]),
+    dcc.Tabs(id="module1b-tabs", value="historical", children=[
+         dcc.Tab(label="Historical", value="historical"),
+         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
+     ]),
     
     html.Div(id="module1b-tabs-container"),
 
@@ -219,6 +219,16 @@ def toggle_display_type(n_volume, n_percentage):
 )
 def toggle_prediction_tab(uploaded):
     return not uploaded
+
+@app.callback(
+    Output("module1b-tabs", "value"),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=True
+)
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
 
 @app.callback(
     Output("module1b-tab-content", "children"),
@@ -416,12 +426,12 @@ def generate_bar_chart(df, x_col, y_col, previous_col):
                       margin=dict(t=30, l=10, r=10, b=10))
     return fig
 
-@app.callback(
-    Output("module1b-tabs-container", "children"),
-    Input("input-uploaded", "data")
-)
-def build_tabs(uploaded):
-    return dcc.Tabs(id="module1b-tabs", value="historical", children=[
-        dcc.Tab(label="Historical", value="historical"),
-        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=not uploaded),
-    ])
+# @app.callback(
+#     Output("module1b-tabs-container", "children"),
+#     Input("input-uploaded", "data")
+# )
+# def build_tabs(uploaded):
+#     return dcc.Tabs(id="module1b-tabs", value="historical", children=[
+#         dcc.Tab(label="Historical", value="historical"),
+#         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=not uploaded),
+#     ])
