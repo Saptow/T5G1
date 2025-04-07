@@ -1,4 +1,4 @@
-# Module3.py Bubble Chart 
+# Module4a.py Bubble Chart 
 
 from dash import dcc, html, Input, Output, State, callback_context, get_app
 import dash_bootstrap_components as dbc
@@ -88,8 +88,84 @@ def get_filtered_countries(df, num_countries, order, metric):
 
 # === Main Layout (Graph only) ===
 layout = html.Div([
+
     html.H1("Singapore's Geopolitical Distance vs. Total Trade By Year"),
-    dcc.Graph(id='trade-graph')
+
+    html.Div([
+    html.H5("Trade Distance Filters", className="text-muted mb-3"),
+
+    html.Label("Select Year:"),
+    dcc.Dropdown(
+        id='year-dropdown',
+        options=[{"label": str(year), "value": year} for year in years],
+        value=max(years),  # Default to the most recent year
+        clearable=False,
+        style={"width": "100%"},
+        className="mb-3"
+    ),
+
+    html.Label("Select Countries:"),
+    dcc.Dropdown(
+        id='country-selector',
+        options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+        multi=True,
+        style={"color": "black", "backgroundColor": "white"},
+        value=["China", "USA", "Indonesia", "Germany", "India"],
+        className="mb-3"
+    ),
+
+    html.Label("View Top N Countries:"),
+    dcc.Dropdown(
+        id='num-countries',
+        options=[{'label': str(i), 'value': i} for i in [5, 10]],
+        style={"color": "black", "backgroundColor": "white"},
+        clearable=True,
+        className="mb-3"
+    ),
+
+    html.Label("Trade Order Criterion:"),
+    dcc.Dropdown(
+        id='order-selector',
+        options=[
+            {'label': "smallest", 'value': "smallest"},
+            {'label': "largest", 'value': "largest"}
+        ],
+        style={"color": "black", "backgroundColor": "white"},
+        clearable=True,
+        className="mb-3"
+    ),
+
+    html.Label("Trade Metric:"),
+    dcc.Dropdown(
+        id='metric-selector',
+        options=[
+            {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
+            {'label': "trade deficit", 'value': "Trade Deficit"},
+            {'label': "trade surplus", 'value': "Trade Surplus"}
+        ],
+        style={"color": "black", "backgroundColor": "white"},
+        clearable=True,
+        className="mb-3"
+    )
+]),
+    # dcc.Graph(id='trade-graph'),
+
+    html.Div(id="tab-warning4a", className="text-danger mb-2 text-center"),
+
+    dcc.Tabs(id="module4a-tabs", value="historical", children=[
+         dcc.Tab(label="Historical", value="historical"),
+         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
+     ]),
+    
+    html.Div(id="module4a-tabs-container"),
+
+    html.Div(id="module4a-tab-content", className="mt-3"),
+    # === Hidden dummy components to make Dash recognize outputs ===
+    html.Div([
+        html.Div(id='sector-title4a', style={'display': 'none'}),
+        dcc.Graph(id='trade-graph', style={'display': 'none'}),
+    ], style={'display': 'none'})
+
 ])
 
 @app.callback(
@@ -261,64 +337,114 @@ def update_graph(selected_countries, num_countries, order, metric, selected_year
     showlegend=True
     )
 
-    
     return fig
+
+@app.callback(
+    Output("prediction-tab4a", "disabled"),
+    Input("input-uploaded", "data"),
+    #prevent_initial_call=True
+)
+def toggle_prediction_tab(uploaded):
+    return not uploaded
+
+@app.callback(
+    Output("module4a-tabs", "value"),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=True
+)
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
+
+@app.callback(
+    Output("module4a-tab-content", "children"),
+    Input("module4a-tabs", "value")
+)
+def render_tab_content(tab):
+    if tab == "historical":
+        return html.Div([
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title4a", className="text-center mb-2"),
+            dcc.Graph(id='trade-graph', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+        ])
+    elif tab == "prediction":
+        return html.Div([
+            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+        ])
+
 
 # === Sidebar Controls for Module 3 ===
 sidebar_controls = html.Div([
-    html.H5("Trade Distance Filters", className="text-muted mb-3"),
+    # html.H5("Trade Distance Filters", className="text-muted mb-3"),
 
-    html.Label("Select Year:"),
-    dcc.Dropdown(
-        id='year-dropdown',
-        options=[{"label": str(year), "value": year} for year in years],
-        value=max(years),  # Default to the most recent year
-        clearable=False,
-        style={"width": "100%"},
-        className="mb-3"
-    ),
+    # html.Label("Select Year:"),
+    # dcc.Dropdown(
+    #     id='year-dropdown',
+    #     options=[{"label": str(year), "value": year} for year in years],
+    #     value=max(years),  # Default to the most recent year
+    #     clearable=False,
+    #     style={"width": "100%"},
+    #     className="mb-3"
+    # ),
 
-    html.Label("Select Countries:"),
-    dcc.Dropdown(
-        id='country-selector',
-        options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
-        multi=True,
-        style={"color": "black", "backgroundColor": "white"},
-        value=["China", "USA", "Indonesia", "Germany", "India"],
-        className="mb-3"
-    ),
+    # html.Label("Select Countries:"),
+    # dcc.Dropdown(
+    #     id='country-selector',
+    #     options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+    #     multi=True,
+    #     style={"color": "black", "backgroundColor": "white"},
+    #     value=["China", "USA", "Indonesia", "Germany", "India"],
+    #     className="mb-3"
+    # ),
 
-    html.Label("View Top N Countries:"),
-    dcc.Dropdown(
-        id='num-countries',
-        options=[{'label': str(i), 'value': i} for i in [5, 10]],
-        style={"color": "black", "backgroundColor": "white"},
-        clearable=True,
-        className="mb-3"
-    ),
+    # html.Label("View Top N Countries:"),
+    # dcc.Dropdown(
+    #     id='num-countries',
+    #     options=[{'label': str(i), 'value': i} for i in [5, 10]],
+    #     style={"color": "black", "backgroundColor": "white"},
+    #     clearable=True,
+    #     className="mb-3"
+    # ),
 
-    html.Label("Trade Order Criterion:"),
-    dcc.Dropdown(
-        id='order-selector',
-        options=[
-            {'label': "smallest", 'value': "smallest"},
-            {'label': "largest", 'value': "largest"}
-        ],
-        style={"color": "black", "backgroundColor": "white"},
-        clearable=True,
-        className="mb-3"
-    ),
+    # html.Label("Trade Order Criterion:"),
+    # dcc.Dropdown(
+    #     id='order-selector',
+    #     options=[
+    #         {'label': "smallest", 'value': "smallest"},
+    #         {'label': "largest", 'value': "largest"}
+    #     ],
+    #     style={"color": "black", "backgroundColor": "white"},
+    #     clearable=True,
+    #     className="mb-3"
+    # ),
 
-    html.Label("Trade Metric:"),
-    dcc.Dropdown(
-        id='metric-selector',
-        options=[
-            {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
-            {'label': "trade deficit", 'value': "Trade Deficit"},
-            {'label': "trade surplus", 'value': "Trade Surplus"}
-        ],
-        style={"color": "black", "backgroundColor": "white"},
-        clearable=True,
-        className="mb-3"
-    )
+    # html.Label("Trade Metric:"),
+    # dcc.Dropdown(
+    #     id='metric-selector',
+    #     options=[
+    #         {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
+    #         {'label': "trade deficit", 'value': "Trade Deficit"},
+    #         {'label': "trade surplus", 'value': "Trade Surplus"}
+    #     ],
+    #     style={"color": "black", "backgroundColor": "white"},
+    #     clearable=True,
+    #     className="mb-3"
+    # )
 ])
+
+# def render_tab_content(tab):
+#     if tab == "historical":
+#         return html.Div([
+#             html.Div(style={'marginTop': '20px'}),
+#             html.H5(id='sector-title1b', className="text-center mb-2"),
+#             dcc.Graph(id='sector-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+#             html.H5(id='country-title1b', className="text-center mb-2"),
+#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white"})
+#         ])
+#     elif tab == "prediction":
+#         return html.Div([
+#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+#         ])
