@@ -2,7 +2,7 @@ import warnings
 warnings.filterwarnings("ignore", message="A nonexistent object was used in an `Input` of a Dash callback.")
 
 import dash
-from dash import dcc, html, Output, Input, callback_context
+from dash import dcc, html, Output, Input, callback_context, State
 import dash_bootstrap_components as dbc
 
 # Initialize
@@ -11,9 +11,41 @@ server = app.server
 
 # Import layouts
 from index import layout as index_layout
-from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c
+from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c, module5
 
 # Top Navbar with Dropdowns - might need to change dropdown style
+# navbar = dbc.Navbar(
+#     dbc.Container([
+#         dbc.NavbarBrand("Dashboard", className="ms-2 text-white", style={"fontSize": "1.6rem"}),
+#         dbc.NavbarToggler(id="navbar-toggler"),
+#         dbc.Collapse(
+#             dbc.Nav([
+#                 dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-3 fs-5", active="exact")),
+#                 dbc.DropdownMenu(label="Sector Statistics", children=[
+#                     dbc.DropdownMenuItem("top N partner country for sector", href="/module1a"),
+#                     dbc.DropdownMenuItem("sector share change over time", href="/module1b"),
+#                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
+#                 dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3 fs-5", active="exact")),
+#                 dbc.DropdownMenu(label="Country Statistics", children=[
+#                     dbc.DropdownMenuItem("top N partner country for sector", href="/module3a"),
+#                     dbc.DropdownMenuItem("sector share change over time", href="/module3b"),
+#                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
+#                 dbc.DropdownMenu(label="Geopolitical Trade Statistics", children=[
+#                     dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
+#                     dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
+#                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
+#                 dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3 fs-5", active="exact")),
+#             ], className="ms-auto", navbar=True),
+#             id="navbar-collapse",
+#             navbar=True
+#         )
+#     ]),
+#     color="primary",
+#     dark=True,
+#     fixed="top",
+#     className="mb-4 px-4"
+# )
+
 navbar = dbc.Navbar(
     dbc.Container([
         dbc.NavbarBrand("Dashboard", className="ms-2 text-white", style={"fontSize": "1.6rem"}),
@@ -21,29 +53,55 @@ navbar = dbc.Navbar(
         dbc.Collapse(
             dbc.Nav([
                 dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-3 fs-5", active="exact")),
-                dbc.DropdownMenu(label="Module 1", children=[
-                    dbc.DropdownMenuItem("Module 1A", href="/module1a"),
-                    dbc.DropdownMenuItem("Module 1B", href="/module1b"),
+                dbc.DropdownMenu(label="Sector Statistics", children=[
+                    dbc.DropdownMenuItem("top N partner country for sector", href="/module1a"),
+                    dbc.DropdownMenuItem("sector share change over time", href="/module1b"),
                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
-                dbc.NavItem(dbc.NavLink("Module 2", href="/module2", className="mx-3 fs-5", active="exact")),
-                dbc.DropdownMenu(label="Module 3", children=[
-                    dbc.DropdownMenuItem("Module 3A", href="/module3a"),
-                    dbc.DropdownMenuItem("Module 3B", href="/module3b"),
+                dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3 fs-5", active="exact")),
+                dbc.DropdownMenu(label="Country Statistics", children=[
+                    dbc.DropdownMenuItem("top N partner country for sector", href="/module3a"),
+                    dbc.DropdownMenuItem("sector share change over time", href="/module3b"),
                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
-                dbc.DropdownMenu(label="Module 4", children=[
-                    dbc.DropdownMenuItem("Module 4A", href="/module4a"),
-                    dbc.DropdownMenuItem("Module 4B", href="/module4b"),
-                    dbc.DropdownMenuItem("Module 4C", href="/module4c"),
+                dbc.DropdownMenu(label="Geopolitical Trade Statistics", children=[
+                    dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
+                    dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
                 ], nav=True, in_navbar=True, className="mx-3 fs-5"),
-                dbc.DropdownMenu(label="Module 5", children=[
-                    dbc.DropdownMenuItem("Module 5A", href="/module5a"),
-                    dbc.DropdownMenuItem("Module 5B", href="/module5b"),
-                    dbc.DropdownMenuItem("Module 5C", href="/module5c"),
-                ], nav=True, in_navbar=True, className="mx-3 fs-5"),
+                dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3 fs-5", active="exact")),
             ], className="ms-auto", navbar=True),
             id="navbar-collapse",
             navbar=True
-        )
+        ),
+
+        # RIGHT-ALIGNED PREDICT BUTTON (not inside the Collapse/nav)
+        dbc.Button("Predict", id="open-predict", color="light", className="ms-3"),
+
+        # Offcanvas that opens from right
+        dbc.Offcanvas(
+    id="predict-offcanvas",
+    title="Prediction Input",
+    is_open=False,
+    placement="end",
+    children=[
+        # URL Input
+        dbc.InputGroup([
+            dbc.Input(id="news-url-input", placeholder="Paste URL here...", type="url"),
+            dbc.Button("Go", id="submit-url", n_clicks=0, color="primary"),
+        ], className="mb-4"),
+
+        html.Hr(),
+
+        # Clickable article images
+        html.Div([
+            html.H5("Or choose a sample article:"),
+            dbc.Row([
+                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-1", n_clicks=0, style={"cursor": "pointer"}), width=4),
+                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-2", n_clicks=0, style={"cursor": "pointer"}), width=4),
+                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-3", n_clicks=0, style={"cursor": "pointer"}), width=4),
+            ], className="g-2"),
+        ])
+    ],
+)
+,
     ]),
     color="primary",
     dark=True,
@@ -51,9 +109,12 @@ navbar = dbc.Navbar(
     className="mb-4 px-4"
 )
 
+
 # === App Layout ===
 app.layout = html.Div([
     dcc.Location(id="url"),
+    dcc.Store(id="input-uploaded", data=False),  # Initial state: not uploaded
+    dcc.Store(id="uploaded-url", data=None),     # to track the exact URL or image clicked
     navbar,
     html.Div(id="sidebar-dynamic", style={"margin": "1rem 2rem"}),
     html.Div(id="page-content", style={"padding": "2rem 2rem 2rem 2rem", "marginTop": "5rem"})
@@ -76,14 +137,8 @@ def display_page(pathname):
         return module4a.layout
     elif pathname == "/module4b":
         return module4b.layout
-    elif pathname == "/module4c":
-        return module4c.layout
-    elif pathname == "/module5a":
-        return module5a.layout
-    elif pathname == "/module5b":
-        return module5b.layout
-    elif pathname == "/module5c":
-        return module5c.layout
+    elif pathname == "/module5":
+        return module5.layout
     elif pathname == "/" or pathname == "":
         return index_layout
     return html.Div("404 - Page not found")
@@ -105,14 +160,8 @@ def update_sidebar(pathname):
         return module4a.sidebar_controls
     elif pathname == "/module4b":
         return module4b.sidebar_controls
-    elif pathname == "/module4c":
-        return module4c.sidebar_controls
-    elif pathname == "/module5a":
-        return module5a.sidebar_controls
-    elif pathname == "/module5b":
-        return module5b.sidebar_controls
-    elif pathname == "/module5c":
-        return module5c.sidebar_controls
+    elif pathname == "/module5":
+        return module5.sidebar_controls
     else:
         return None
 
@@ -130,6 +179,40 @@ def navigate(go1, go2):
     elif ctx == "go-to-module2" and go2:
         return "/module2"
     return dash.no_update
+
+### Predict Button Callback
+@app.callback(
+    Output("predict-offcanvas", "is_open"),
+    Input("open-predict", "n_clicks"),
+    prevent_initial_call=True
+)
+def toggle_offcanvas(n_clicks):
+    if n_clicks:
+        return True
+    return False
+
+@app.callback(
+    Output("input-uploaded", "data"),
+    Output("uploaded-url", "data"),
+    Input("submit-url", "n_clicks"),
+    Input("article-img-1", "n_clicks"),
+    Input("article-img-2", "n_clicks"),
+    Input("article-img-3", "n_clicks"),
+    State("news-url-input", "value"),
+    prevent_initial_call=True
+)
+def handle_input_submission(n_url, n1, n2, n3, url_value):
+    ctx = callback_context.triggered_id
+    if ctx == "submit-url" and url_value:
+        return True, url_value
+    elif ctx == "article-img-1":
+        return True, "https://sample-article1.com"
+    elif ctx == "article-img-2":
+        return True, "https://sample-article2.com"
+    elif ctx == "article-img-3":
+        return True, "https://sample-article3.com"
+    return dash.no_update
+
 
 # === Run App ===
 if __name__ == '__main__':
