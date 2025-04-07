@@ -94,9 +94,9 @@ navbar = dbc.Navbar(
         html.Div([
             html.H5("Or choose a sample article:"),
             dbc.Row([
-                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-1", n_clicks=0, style={"cursor": "pointer"}), width=4),
-                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-2", n_clicks=0, style={"cursor": "pointer"}), width=4),
-                dbc.Col(html.Img(src="https://via.placeholder.com/150", id="article-img-3", n_clicks=0, style={"cursor": "pointer"}), width=4),
+                dbc.Col(html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0, style={"cursor": "pointer"}), width=4),
+                dbc.Col(html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0, style={"cursor": "pointer"}), width=4),
+                dbc.Col(html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0, style={"cursor": "pointer"}), width=4),
             ], className="g-2"),
         ])
     ],
