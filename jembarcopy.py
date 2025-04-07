@@ -1,6 +1,6 @@
 ### Run something ### 
 
-# Updated Input Controls and Layout (Volume = Bar Graph, Percentage = Treemap)
+# Full Combined Dash App (Part 1 - Top & Complete Layout)
 
 import pandas as pd
 import plotly.express as px
@@ -52,11 +52,17 @@ app.layout = html.Div([
             dbc.Row([
                 dbc.Col([
                     dbc.ButtonGroup([
-                        dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
-                        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
+                        dbc.Button("Volume", id='btn-volume', n_clicks=0, color='secondary', outline=True, size='sm'),
+                        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='primary', outline=True, size='sm')
                     ], className='w-100')
                 ], width=4, className='mb-2')
             ], justify='center', className='mb-2'),
+
+            dbc.Row([
+                dbc.Col([
+                    html.Label([Switch(id="view-toggle", label="View as Bar Graph", value=False)])
+                ], width=4, className='text-center mb-3')
+            ], justify='center'),
 
             dbc.Row([
                 dbc.Col([
@@ -101,7 +107,7 @@ app.layout = html.Div([
     }),
 
     dcc.Store(id='trade-type-select', data='export'),
-    dcc.Store(id='display-type', data='volume'),
+    dcc.Store(id='display-type', data='percentage'),
     dbc.Tooltip("Select the reporting country", target="tooltip-country")
 ])
 

@@ -62,13 +62,13 @@ layout = html.Div([
         #     ], className='w-100')
         # ], className="col-md-6"),
         html.Div([
-            html.Label("Trade Type", className="form-label fw-semibold mb-1"),
+            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
             dbc.ButtonGroup([
-                dbc.Button("Total", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary'),
-                dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm'),
-                dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm')
+                dbc.Button("Total", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
+                dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
             ], className='w-100')
-        ], className="col-md-6", style={"border": "1px solid #ccc", "border-radius": "5px", "padding": "10px"}),
+        ], className="col-md-6"),
 
         # html.Div([
         #     html.Label("Display Type", className="form-label fw-semibold mb-1"),
@@ -155,18 +155,55 @@ def switch_to_prediction_tab(uploaded):
         return "prediction"
     return dash.no_update
 
+
+
+
+# def render_tab_content(tab, display_type):
+#     if tab == "historical":
+#         return html.Div([
+#             html.Div(style={'marginTop': '20px'}),
+#             html.H5(id='country-title1b', className="text-center mb-2"),
+#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'percentage' else 'none'}),
+#             dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'volume' else 'none'})
+#         ])
+#     elif tab == "prediction":
+#         return html.Div([
+#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+#         ])
+
+# @app.callback(
+#     Output("module1b-tab-content", "children"),
+#     Input("module1b-tabs", "value"),
+#     #State('display-type1b', 'data')
+# )
+
+# def render_tab_content(tab, display_type):
+#     if tab == "historical":
+#         treemap_style = {"backgroundColor": "white", 'display': 'block' if display_type == 'percentage' else 'none'}
+#         bar_style = {"backgroundColor": "white", 'display': 'block' if display_type == 'volume' else 'none'}
+#         return html.Div([
+#             html.Div(style={'marginTop': '20px'}),
+#             html.H5(id='country-title1b', className="text-center mb-2"),
+#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style=treemap_style),
+#             dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style=bar_style)
+#         ])
+#     elif tab == "prediction":
+#         return html.Div([
+#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+#         ])
 @app.callback(
     Output("module1b-tab-content", "children"),
-    Input("module1b-tabs", "value"),
-    State('display-type1b', 'data')
+    Input("module1b-tabs", "value")
 )
-def render_tab_content(tab, display_type):
+def render_tab_content(tab):
     if tab == "historical":
         return html.Div([
             html.Div(style={'marginTop': '20px'}),
             html.H5(id='country-title1b', className="text-center mb-2"),
-            dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'percentage' else 'none'}),
-            dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'volume' else 'none'})
+            dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+            dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white"})
         ])
     elif tab == "prediction":
         return html.Div([
@@ -174,6 +211,7 @@ def render_tab_content(tab, display_type):
             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
 
+    
 @app.callback(
     Output('country-treemap1b', 'figure'),
     Output('country-bar1b', 'figure'),
@@ -222,6 +260,17 @@ def update_visualizations(selected_country, trade_type, selected_partner):
     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume')
 
     return fig_treemap, fig_bar, partner_options, title
+
+@app.callback(
+    Output('country-treemap1b', 'style'),
+    Output('country-bar1b', 'style'),
+    Input('display-type1b', 'data')
+)
+def toggle_graph_visibility(display_type):
+    if display_type == 'percentage':
+        return {'display': 'block'}, {'display': 'none'}
+    return {'display': 'none'}, {'display': 'block'}
+
 
 # === Helpers ===
 

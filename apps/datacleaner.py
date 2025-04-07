@@ -107,4 +107,4 @@ print(missing_pairs_list)
 for col in merged.columns:
     print(col)
 
-merged.to_csv("data/final/historical_data.csv", index=False)
+#merged.to_csv("data/final/historical_data.csv", index=False)
