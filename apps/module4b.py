@@ -1,212 +1,108 @@
-from dash import Dash, dcc, html, Input, Output, State, callback_context, get_app
-from dash.exceptions import PreventUpdate
-import plotly.graph_objects as go
+from dash import dcc, html, Input, Output, State, callback_context, get_app
+import dash_bootstrap_components as dbc
+import plotly.express as px
 import pandas as pd
+import dash
+from dash.dependencies import Input, Output
+import plotly.graph_objects as go
 
-# Load and prepare data (as previously done)
-df = pd.read_csv("bilateral_trade_data_2026.csv")
+df = pd.read_csv("sample_trade_data_geopo.csv")
 
-df_2026a = df[df["Time Period"] == "2026a"]
-df_2026b = df[df["Time Period"] == "2026b"]
-
-agg_2026a = df_2026a.groupby(["Reporter", "Sector Group"]).agg({
-    "Export Value": "sum",
-    "Import Value": "sum",
-    "Total Trade Volume": "sum"
-}).rename(columns=lambda x: x + "_2026a")
-
-agg_2026b = df_2026b.groupby(["Reporter", "Sector Group"]).agg({
-    "Export Value": "sum",
-    "Import Value": "sum",
-    "Total Trade Volume": "sum"
-}).rename(columns=lambda x: x + "_2026b")
-
-df_merged = agg_2026a.join(agg_2026b, how='inner').reset_index()
-
-for col in ["Export Value", "Import Value", "Total Trade Volume"]:
-    df_merged[f"{col} % Change"] = (
-        (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"]
-    ) * 100
+# Ensure 'Years' is treated as a string or categorical for consistent axis labels
+df["Year"] = df["Year"].astype(str)
 
 app = get_app()
-# Sidebar controls only (to be used in index.py dynamically)
-sidebar_controls = html.Div([
-    html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="mb-3"),
 
-    html.Div([
-
-        # Group 1: Button Toggle
-        html.Div([
-            html.P("1. Select Country/Sector:", style={"marginBottom": "2px"}),
-            html.Div([
-                html.Button("By Country", id="btn-country", n_clicks=0, className="inactive", style={"marginRight": "5px"}),
-                html.Button("By Sector", id="btn-sector", n_clicks=0, className="inactive")
-            ])
-        ], style={"marginRight": "30px"}),
-
-        # Group 2: Dropdown for filter
-        html.Div([
-            html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
-            dcc.Dropdown(
-                id="filter-dropdown",
-                placeholder="",
-                style={"width": "220px"}
-            )
-        ], style={"marginRight": "30px"}),
-
-        # Group 3: Trade Type Dropdown
-        html.Div([
-            html.P("3. Select Trade Type:", style={"marginBottom": "2px"}),
-            dcc.Dropdown(
-                id="trade-type-dropdown",
-                options=[
-                    {"label": "Total Trade Volume", "value": "Total Trade Volume"},
-                    {"label": "Export Value", "value": "Export Value"},
-                    {"label": "Import Value", "value": "Import Value"}
-                ],
-                placeholder="",
-                style={"width": "220px"}
-            )
-        ])
-    ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"})
-], style={"padding": "10px"})
-
-
-# Layout (no sidebar_controls here to avoid duplication in index.py)
+# Layout
 layout = html.Div([
-    html.Div([
-        dcc.Graph(id="dumbbell-graph", style={"marginTop": "20px"})
-    ])
-])
+    html.H4("Geopolitical Distance vs. Total Trade Over Time", className="mb-4"),
 
-# Callback registration
-def register_callbacks(app):
+    dcc.Graph(id="geo-trade-chart", style={"height": "600px"}),
+], className="p-4")
 
-    @app.callback(
-        Output("btn-country", "className"),
-        Output("btn-sector", "className"),
-        Output("filter-dropdown", "options"),
-        Output("filter-dropdown", "placeholder"),
-        Output("filter-dropdown", "value"),
-        Input("btn-country", "n_clicks"),
-        Input("btn-sector", "n_clicks")
-    )
-    def update_button_style(n_country, n_sector):
-        ctx = callback_context
-        if not ctx.triggered:
-            raise PreventUpdate
+# Callback
+@app.callback(
+    Output("geo-trade-chart", "figure"),
+    Input("country-selector", "value")
+)
+def update_geo_trade_chart(selected_country):
+    country_df = df[df["Country"] == selected_country]
 
-        clicked = ctx.triggered[0]["prop_id"].split(".")[0]
+    # Prepare custom data for hover text
+    customdata = country_df[["Geopolitical Distance","Exports", "Imports", "Trade Balance"]].values
 
-        if clicked == "btn-country":
-            return "active", "inactive", [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())], "Choose a specific country", None
-        else:
-            return "inactive", "active", [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())], "Choose a specific sector", None
+    fig = go.Figure()
 
-    @app.callback(
-        Output("dumbbell-graph", "figure"),
-        Input("filter-dropdown", "value"),
-        Input("trade-type-dropdown", "value"),
-        State("btn-country", "className"),
-        State("btn-sector", "className")
-    )
-    def update_graph(selected_filter, trade_type, class_country, class_sector):
-        if not selected_filter:
-            selected_filter = df_merged['Reporter'].unique()[0]
-            trade_type = 'Total Trade Volume'
-            class_country = 'active'
-            class_sector = 'inactive'
-        if not selected_filter or not trade_type:
-            return go.Figure()
-
-        change_col = f"{trade_type} % Change"
-        df_plot = df_merged.copy()
-
-        if class_country == "active":
-            df_plot = df_plot[df_plot["Reporter"] == selected_filter]
-            y_axis = df_plot["Sector Group"]
-        else:
-            df_plot = df_plot[df_plot["Sector Group"] == selected_filter]
-            y_axis = df_plot["Reporter"]
-
-        df_positive = df_plot[df_plot[change_col] >= 0]
-        df_negative = df_plot[df_plot[change_col] < 0]
-
-        fig = go.Figure()
-
-        fig.add_trace(go.Scatter(
-            y=y_axis,
-            x=df_plot[f"{trade_type}_2026a"],
-            mode="markers",
-            name="Before (grey circle)",
-            marker=dict(color="gray", size=12),
-            hoverinfo="skip"
-        ))
-
-        fig.add_trace(go.Scatter(
-            y=df_positive[y_axis.name],
-            x=df_positive[f"{trade_type}_2026b"],
-            mode="markers",
-            name="After (increase %)",
-            marker=dict(color="green", size=12),
-            text=[
-                f"Export: Before = {ev_before:.2f}, After = {ev_after:.2f}<br>"
-                f"Import: Before = {iv_before:.2f}, After = {iv_after:.2f}<br>"
-                f"Total: Before = {tv_before:.2f}, After = {tv_after:.2f}<br>"
-                f"% Change: {chg:.2f}%"
-                for ev_before, ev_after, iv_before, iv_after, tv_before, tv_after, chg in zip(
-                    df_positive["Export Value_2026a"],
-                    df_positive["Export Value_2026b"],
-                    df_positive["Import Value_2026a"],
-                    df_positive["Import Value_2026b"],
-                    df_positive["Total Trade Volume_2026a"],
-                    df_positive["Total Trade Volume_2026b"],
-                    df_positive[change_col]
-                )
-            ],
-            hoverinfo="text"
-        ))
-
-        fig.add_trace(go.Scatter(
-            y=df_negative[y_axis.name],
-            x=df_negative[f"{trade_type}_2026b"],
-            mode="markers",
-            name="After (decrease %)",
-            marker=dict(color="red", size=12),
-            text=[
-                f"Export: before = {ev_before:.2f}, after = {ev_after:.2f}<br>"
-                f"Import: before = {iv_before:.2f}, after = {iv_after:.2f}<br>"
-                f"Total: before = {tv_before:.2f}, after = {tv_after:.2f}<br>"
-                f"% Change: {chg:.2f}%"
-                for ev_before, ev_after, iv_before, iv_after, tv_before, tv_after, chg in zip(
-                    df_negative["Export Value_2026a"],
-                    df_negative["Export Value_2026b"],
-                    df_negative["Import Value_2026a"],
-                    df_negative["Import Value_2026b"],
-                    df_negative["Total Trade Volume_2026a"],
-                    df_negative["Total Trade Volume_2026b"],
-                    df_negative[change_col]
-                )
-            ],
-            hoverinfo="text"
-        ))
-
-        for i in range(len(df_plot)):
-            fig.add_shape(type="line",
-                          y0=y_axis.iloc[i], x0=df_plot[f"{trade_type}_2026a"].iloc[i],
-                          y1=y_axis.iloc[i], x1=df_plot[f"{trade_type}_2026b"].iloc[i],
-                          line=dict(color="lightgray", width=4))
-
-        fig.update_layout(
-            title=f"Change in {trade_type} after Geopolitical Shock",
-            xaxis_title=trade_type,
-            yaxis_title="" if class_country == "active" else "Country",
-            height=600
+    # Bar for Total Trade (right Y-axis)
+    fig.add_trace(go.Bar(
+        x=country_df["Year"],
+        y=country_df["Total Trade"],
+        name="Total Trade",
+        marker_color="blue",
+        opacity=0.5,
+        yaxis="y2",
+        customdata=customdata,
+        hovertemplate=(
+            "Geopolitical Distance: %{customdata[0]}<br>" +
+            "Total Trade: %{y}<br>" +
+            "Exports: %{customdata[1]}<br>" +
+            "Imports: %{customdata[2]}<br>" +
+            "Trade Balance: %{customdata[3]}<extra></extra>"
         )
+    ))
 
-        return fig
+    # Line for Geopolitical Distance (left Y-axis)
+    fig.add_trace(go.Scatter(
+        x=country_df["Year"],
+        y=country_df["Geopolitical Distance"],
+        name="Geopolitical Distance",
+        mode="lines+markers",
+        marker=dict(color="black"),
+        line=dict(width=3, color="black"),
+        yaxis="y1",
+        hovertemplate=(
+            "Geopolitical Distance: %{customdata[0]}<br>" +
+            "Total Trade: %{y}<br>" +
+            "Exports: %{customdata[1]}<br>" +
+            "Imports: %{customdata[2]}<br>" +
+            "Trade Balance: %{customdata[3]}<extra></extra>"
+        )
+    ))
 
-# Register to current app instance
+    # Layout
+    fig.update_layout(
+        barmode="overlay",
+        template="plotly_white",
+        title=f"{selected_country}: Geopolitical Distance vs. Total Trade (2014–2025)",
+        xaxis=dict(title="Year"),
+        yaxis=dict(
+            title="Geopolitical Distance",
+            range=[-1.1, 1.1]
+        ),
+        yaxis2=dict(
+            title="Total Trade (Billion $)",
+            overlaying="y",
+            side="right"
+        ),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(t=60, b=60, l=60, r=60)
+    )
 
-app.layout = layout 
-register_callbacks(app)
+    return fig
+
+
+# Topbar Controls (should only be visible when module is selected) 
+sidebar_controls = html.Div([
+        html.Label("Select a Country:", className="fw-bold"),
+        dcc.Dropdown(
+            id="country-selector",
+            options=[{"label": c, "value": c} for c in sorted(df["Country"].unique())],
+            value="Germany",  # default
+            style={"width": "300px"}
+        ),
+    ], className="mb-4"),
+    
+        
+
+
+
