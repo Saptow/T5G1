@@ -8,17 +8,54 @@ import dash
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
-# Retrieve data
-data = pd.read_csv('sample_trade_data_geopo.csv') 
+data = pd.read_csv('FBIC_sentiment_comtrade_un.csv') 
 
 # Convert to DataFrame
 df = pd.DataFrame(data)
+df= df.rename(columns= {"exportsallgoodatob_alldata": "Exports", "importsallgoodafromb_alldata": 
+                        "Imports", "totaltradeawithb": "Total Trade", "year": "Year", "iso3a": "CountryA", 
+                        "iso3b": "CountryB", "IdealPointDistance": "Geopolitical Distance"})
+df = df[["CountryA","CountryB", "Year", "Exports", "Imports", "Total Trade", "Geopolitical Distance"]]
+df.drop(df[df['Year'] == 2024].index, inplace=True)
 
 # List of years
 years = sorted(df['Year'].unique())
 
 # Compute the average geopolitical distance
-avg_geopolitical_distance = df["Geopolitical Distance"].mean()
+#avg_geopolitical_distance = df["Geopolitical Distance"].mean()
+
+df["Trade Balance"] = df["Exports"] - df["Imports"]
+
+# Generate Surplus/Deficit Label
+df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
+
+COUNTRY_LABELS = {
+    "ARE": "United Arab Emirates",
+    "AUS": "Australia",
+    "CHE": "Switzerland",
+    "CHN": "China",
+    "DEU": "Germany",
+    "FRA": "France",
+    "HKG": "Hong Kong",
+    "IDN": "Indonesia",
+    "IND": "India",
+    "JPN": "Japan",
+    "KOR": "South Korea",
+    "MYS": "Malaysia",
+    "NLD": "Netherlands",
+    "PHL": "Philippines",
+    "SGP": "Singapore",
+    "THA": "Thailand",
+    "USA": "United States",
+    "VNM": "Vietnam"
+}
+
+# Get unique list of countries from both A and B
+COUNTRY_LIST = sorted(set(df['CountryA'].unique()) | set(df['CountryB'].unique()))
+COUNTRY_LIST = sorted(COUNTRY_LABELS.values())
+
+df['CountryA'] = df['CountryA'].map(COUNTRY_LABELS)
+df['CountryB'] = df['CountryB'].map(COUNTRY_LABELS)
 
 # Generate Surplus/Deficit Label
 df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
@@ -27,72 +64,33 @@ df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 
 app = get_app()
 
 
-def get_filtered_countries(df, num_countries, order, metric):
+def get_filtered_countries(df, reporter_country, num_countries, order, metric):
+
+    # Step 1: Filter by reporter country
+    df = df[df["CountryA"] == reporter_country].copy()
+
+    # Step 2: Rename 'CountryB' as 'Country' for backward compatibility
+    df = df.rename(columns={"CountryB": "Country"})
+
     """Returns a list of countries based on the filter selection."""
     if order == "smallest":
         return df.nsmallest(num_countries, "Geopolitical Distance")["Country"].tolist()
     elif order == "largest":
         if metric == "Absolute_ideal_point_distance":
-            return df.nlargest(num_countries, "Geopoltical Distance")["Country"].tolist()
+            return df.nlargest(num_countries, "Geopolitical Distance")["Country"].tolist()
         elif metric == "Trade Deficit":
             return df.nsmallest(num_countries, "Trade Balance")["Country"].tolist()
         elif metric == "Trade Surplus":
             return df.nlargest(num_countries, "Trade Balance")["Country"].tolist()
     return []
 
-# layout = html.Div([
-#     html.H1("Singapore's Trade Balance vs Geopolitical Distance in 2022"),
-    
-#     dcc.Dropdown(
-#         id='country-selector',
-#         options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
-#         multi=True,
-#         placeholder="Select countries to display",
-#         value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"]  # Default countries
-#     ),
-
-#     html.Div([
-#         html.Span("View the"),
-#         dcc.Dropdown(
-#             id='num-countries',
-#             options=[{'label': str(i), 'value': i} for i in [5, 10]],
-#             value='-',
-#             clearable=True,
-#             style={"width": "80px", "display": "inline-block", "vertical-align": "middle"}
-#         ),
-#         html.Span("countries that Singapore has the"),
-#         dcc.Dropdown(
-#             id='order-selector',
-#             options=[
-#             {'label': "smallest", 'value': "smallest"},
-#             {'label': "largest", 'value': "largest"}],
-#             value='-',
-#             clearable=True,
-#             style={"width": "120px", "display": "inline-block", "vertical-align": "middle"}
-#         ),
-#         dcc.Dropdown(
-#             id='metric-selector',
-#             options=[
-#                 {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
-#                 {'label': "trade deficit", 'value': "Trade Deficit"},
-#                 {'label': "trade surplus", 'value': "Trade Surplus"}],
-#             value='-',
-#             clearable=True,
-#             style={"width": "180px", "display": "inline-block", "vertical-align": "middle"}
-#         ),
-#         html.Span(" with", style={"font-size": "18px"})
-#     ], style={"display": "flex", "align-items": "center", "gap": "5px"}),
-
-#     dcc.Graph(id='trade-graph')
-# ])
-
 # === Main Layout (Graph only) ===
 layout = html.Div([
 
-    html.H1("Singapore's Geopolitical Distance vs. Total Trade By Year"),
+    html.H1("Geopolitical Distance vs. Total Trade By Year"),
 
     html.Div([
-    html.H5("Trade Distance Filters", className="text-muted mb-3"),
+    # html.H5("Trade Distance Filters", className="text-muted mb-3"),
 
     html.Label("Select Year:"),
     dcc.Dropdown(
@@ -104,23 +102,35 @@ layout = html.Div([
         className="mb-3"
     ),
 
-    html.Label("Select Countries:"),
+    html.Label("Select Reporter Country:"),
+    dcc.Dropdown(
+        id='reporter-selector',
+        options=[{'label': country, 'value': country} for country in sorted(df["CountryA"].unique())],
+        value="Singapore",  # or any default
+        clearable=False,
+        className="mb-3"
+    ),
+
+    html.Label("Select Partner Countries:"),
     dcc.Dropdown(
         id='country-selector',
-        options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+        options=[{'label': country, 'value': country} for country in sorted(df["CountryB"].unique())],
         multi=True,
         style={"color": "black", "backgroundColor": "white"},
-        value=["China", "USA", "Indonesia", "Germany", "India"],
+        value=["China", "United States", "Malaysia", "Indonesia", "South Korea"],
         className="mb-3"
     ),
 
     html.Label("View Top N Countries:"),
-    dcc.Dropdown(
+    dcc.Slider(
         id='num-countries',
-        options=[{'label': str(i), 'value': i} for i in [5, 10]],
-        style={"color": "black", "backgroundColor": "white"},
-        clearable=True,
-        className="mb-3"
+        min=0,
+        max=10,
+        step=1,
+        value=0,  # Default value
+        marks={i: str(i) for i in range(0, 11)},
+        tooltip={"placement": "bottom", "always_visible": True},
+        className="mb-4"
     ),
 
     html.Label("Trade Order Criterion:"),
@@ -182,6 +192,7 @@ def update_metric_dropdown(order):
 
 @app.callback(
     Output('trade-graph', 'figure'),
+    Input('reporter-selector', 'value'),
     Input('country-selector', 'value'),
     Input('num-countries', 'value'),
     Input('order-selector', 'value'),
@@ -189,29 +200,31 @@ def update_metric_dropdown(order):
     Input('year-dropdown', 'value')
 )
 
-
-
-def update_graph(selected_countries, num_countries, order, metric, selected_year):
+def update_graph(reporter_country, selected_countries, num_countries, order, metric, selected_year):
     selected_countries = set(selected_countries or [])
-    filtered_countries = set(get_filtered_countries(df, num_countries, order, metric))
+    filtered_countries = set(get_filtered_countries(df, reporter_country, num_countries, order, metric))
     countries_to_display = selected_countries.union(filtered_countries)
     
-    filtered_df = df[df["Country"].isin(countries_to_display)]
+    # Filter by reporter country
+    filtered_df = df[df["CountryA"] == reporter_country]
+
+    # Then filter by selected partner countries
+    filtered_df = filtered_df[filtered_df["CountryB"].isin(countries_to_display)]
     year_df = filtered_df[filtered_df['Year'] == selected_year]
-    
+
     fig = px.scatter(
         year_df,
         x="Trade Balance",
         y="Geopolitical Distance",
         size="Total Trade",
-        color="Country",
-        hover_data={"Country": True, "Exports": True, "Imports": True, "Balance of Trade": True},
-        text="Country",
+        color="CountryB",
+        hover_data={"CountryB": True, "Exports": True, "Imports": True, "Balance of Trade": True},
+        text="CountryB",
         labels={
             "Trade Balance": "Trade Balance (S$ Bil)",
             "Geopolitical Distance": "Geopolitical Distance"
         },
-        title=f"Geopolitical Distance vs. Trade Balance ({selected_year})",
+        title=f"{reporter_country}'s Trade vs. Geopolitical Distance in {selected_year}",
         height=600,
         size_max=50
     )
@@ -234,8 +247,8 @@ def update_graph(selected_countries, num_countries, order, metric, selected_year
 
     # Add a bubble size legend at the top-right corner
     fig.add_annotation(
-        x=max(df["Trade Balance"]) + 12,  # Move it to the rightmost part
-        y=max(df["Geopolitical Distance"]) + 10,  # Position at the top
+        x=year_df["Trade Balance"].max() * 1.1,  # Move it to the rightmost part
+        y=year_df["Trade Balance"].max() * 1.1,  # Position at the top
         text="Circle Size: Total Trade Value",
         showarrow=False,
         font=dict(size=14, color="black"),
@@ -248,8 +261,8 @@ def update_graph(selected_countries, num_countries, order, metric, selected_year
     fig.add_vline(x=0, line_dash="dash", line_color="gray")
 
     # Add a horizontal reference line at the average geopolitical distance
-    fig.add_hline(y=avg_geopolitical_distance, line_dash="dot", line_color="gray", 
-              annotation_text="Singapore's Average Geopolitical Distance", annotation_position="top right")
+    fig.add_hline(y=filtered_df["Geopolitical Distance"].mean(), line_dash="dot", line_color="gray", 
+              annotation_text=f"{reporter_country}'s Average Geopolitical Distance", annotation_position="top right")
 
     # Add annotation for Trade Deficit
     fig.add_annotation(
@@ -374,6 +387,53 @@ def render_tab_content(tab):
             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
 
+
+
+# layout = html.Div([
+#     html.H1("Singapore's Trade Balance vs Geopolitical Distance in 2022"),
+    
+#     dcc.Dropdown(
+#         id='country-selector',
+#         options=[{'label': country, 'value': country} for country in sorted(df["Country"].unique())],
+#         multi=True,
+#         placeholder="Select countries to display",
+#         value=["China", "Malaysia", "United States", "Indonesia", "South Korea", "Japan", "Thailand", "Australia", "Vietnam", "India"]  # Default countries
+#     ),
+
+#     html.Div([
+#         html.Span("View the"),
+#         dcc.Dropdown(
+#             id='num-countries',
+#             options=[{'label': str(i), 'value': i} for i in [5, 10]],
+#             value='-',
+#             clearable=True,
+#             style={"width": "80px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         html.Span("countries that Singapore has the"),
+#         dcc.Dropdown(
+#             id='order-selector',
+#             options=[
+#             {'label': "smallest", 'value': "smallest"},
+#             {'label': "largest", 'value': "largest"}],
+#             value='-',
+#             clearable=True,
+#             style={"width": "120px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         dcc.Dropdown(
+#             id='metric-selector',
+#             options=[
+#                 {'label': "geopolitical distance", 'value': "Absolute_ideal_point_distance"},
+#                 {'label': "trade deficit", 'value': "Trade Deficit"},
+#                 {'label': "trade surplus", 'value': "Trade Surplus"}],
+#             value='-',
+#             clearable=True,
+#             style={"width": "180px", "display": "inline-block", "vertical-align": "middle"}
+#         ),
+#         html.Span(" with", style={"font-size": "18px"})
+#     ], style={"display": "flex", "align-items": "center", "gap": "5px"}),
+
+#     dcc.Graph(id='trade-graph')
+# ])
 
 # === Sidebar Controls for Module 3 ===
 sidebar_controls = html.Div([
