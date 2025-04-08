@@ -5,56 +5,41 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import dcc, html, Input, Output, State, callback_context, get_app
 import dash
+import pycountry 
 
 app = get_app()
 
-# === SHARED DATA PREPARATION ===
-df = pd.read_csv("bilateral_trade_data_2026.csv")
+# === 1. LOAD AND TRANSFORM DATA ONCE ===
+df_raw = pd.read_csv("sample_2026.csv")
 
-# Dumbbell data
+# Map country codes
+country_code_to_name = {c.alpha_3: c.name for c in pycountry.countries}
+df_raw["Time Period"] = df_raw["scenario"].map({"forecast": "2026a", "postshock": "2026b"})
+df_raw.rename(columns={
+    "country_a": "Reporter",
+    "country_b": "Partner",
+    "total_import_of_A_from_B": "Import Value",
+    "trade_volume": "Total Trade Volume"
+}, inplace=True)
+df_raw["Reporter"] = df_raw["Reporter"].map(country_code_to_name).fillna(df_raw["Reporter"])
+df_raw["Partner"] = df_raw["Partner"].map(country_code_to_name).fillna(df_raw["Partner"])
+df_raw["Export Value"] = df_raw["Total Trade Volume"] - df_raw["Import Value"]
 
-df_2026a = df[df["Time Period"] == "2026a"]
-df_2026b = df[df["Time Period"] == "2026b"]
+# === 2. COUNTRY-LEVEL AGGREGATION ===
+country_metrics = {}
+for role, col_name in [("Reporter", "Reporter"), ("Partner", "Partner")]:
+    for metric, new_col in [
+        ("Total Trade Volume", f"{col_name} Total"),
+        ("Export Value", f"{col_name} Export"),
+        ("Import Value", f"{col_name} Import")
+    ]:
+        temp = df_raw.groupby([role, "Time Period"])[metric].sum().reset_index()
+        temp.rename(columns={role: "Country", metric: new_col}, inplace=True)
+        country_metrics[new_col] = temp
 
-agg_2026a = df_2026a.groupby(["Reporter", "Sector Group"]).agg({
-    "Export Value": "sum",
-    "Import Value": "sum",
-    "Total Trade Volume": "sum"
-}).rename(columns=lambda x: x + "_2026a")
-
-agg_2026b = df_2026b.groupby(["Reporter", "Sector Group"]).agg({
-    "Export Value": "sum",
-    "Import Value": "sum",
-    "Total Trade Volume": "sum"
-}).rename(columns=lambda x: x + "_2026b")
-
-df_merged = agg_2026a.join(agg_2026b, how='inner').reset_index()
-
-for col in ["Export Value", "Import Value", "Total Trade Volume"]:
-    df_merged[f"{col} % Change"] = (
-        (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"]
-    ) * 100
-
-# Ranking data
-reporter_total_df = df.groupby(["Reporter", "Time Period"])["Total Trade Volume"].sum().reset_index()
-reporter_total_df.rename(columns={"Reporter": "Country", "Total Trade Volume": "Reporter Total"}, inplace=True)
-partner_total_df = df.groupby(["Partner", "Time Period"])["Total Trade Volume"].sum().reset_index()
-partner_total_df.rename(columns={"Partner": "Country", "Total Trade Volume": "Partner Total"}, inplace=True)
-reporter_export_df = df.groupby(["Reporter", "Time Period"])["Export Value"].sum().reset_index()
-reporter_export_df.rename(columns={"Reporter": "Country", "Export Value": "Reporter Export"}, inplace=True)
-partner_export_df = df.groupby(["Partner", "Time Period"])["Import Value"].sum().reset_index()
-partner_export_df.rename(columns={"Partner": "Country", "Import Value": "Partner Export"}, inplace=True)
-reporter_import_df = df.groupby(["Reporter", "Time Period"])["Import Value"].sum().reset_index()
-reporter_import_df.rename(columns={"Reporter": "Country", "Import Value": "Reporter Import"}, inplace=True)
-partner_import_df = df.groupby(["Partner", "Time Period"])["Export Value"].sum().reset_index()
-partner_import_df.rename(columns={"Partner": "Country", "Export Value": "Partner Import"}, inplace=True)
-
-combined_df = reporter_total_df.copy()
-combined_df = combined_df.merge(partner_total_df, on=["Country", "Time Period"], how="outer")
-combined_df = combined_df.merge(reporter_export_df, on=["Country", "Time Period"], how="outer")
-combined_df = combined_df.merge(partner_export_df, on=["Country", "Time Period"], how="outer")
-combined_df = combined_df.merge(reporter_import_df, on=["Country", "Time Period"], how="outer")
-combined_df = combined_df.merge(partner_import_df, on=["Country", "Time Period"], how="outer")
+combined_df = country_metrics["Reporter Total"]
+for key in list(country_metrics.keys())[1:]:
+    combined_df = combined_df.merge(country_metrics[key], on=["Country", "Time Period"], how="outer")
 
 combined_df.fillna(0, inplace=True)
 combined_df["Total Trade"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
@@ -65,65 +50,41 @@ pivot = combined_df.pivot(index="Country", columns="Time Period", values=["Total
 percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)
 percent_change.reset_index(inplace=True)
 
-# === Create pivoted for sector-based ranking view ===
+# === 3. SECTOR-LEVEL TRANSFORMATION ===
+import_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_import" in c]
+export_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_export" in c]
 
-# Group by sector and country to prepare detailed trade change breakdowns
-reporter_total_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Total Trade Volume"].sum().reset_index()
-reporter_total_sector_df.rename(columns={"Reporter": "Country", "Total Trade Volume": "Reporter Total"}, inplace=True)
+export_melted = df_raw[["Reporter", "Time Period"] + export_cols].melt(
+    id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Export Value"
+)
+export_melted["Sector Group"] = "Sector " + export_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
 
-partner_total_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Total Trade Volume"].sum().reset_index()
-partner_total_sector_df.rename(columns={"Partner": "Country", "Total Trade Volume": "Partner Total"}, inplace=True)
+import_melted = df_raw[["Reporter", "Time Period"] + import_cols].melt(
+    id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Import Value"
+)
+import_melted["Sector Group"] = "Sector " + import_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
 
-reporter_export_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Export Value"].sum().reset_index()
-reporter_export_sector_df.rename(columns={"Reporter": "Country", "Export Value": "Reporter Export"}, inplace=True)
+sector_df = pd.merge(
+    export_melted[["Reporter", "Time Period", "Sector Group", "Export Value"]],
+    import_melted[["Reporter", "Time Period", "Sector Group", "Import Value"]],
+    on=["Reporter", "Time Period", "Sector Group"],
+    how="outer"
+)
+sector_df.fillna(0, inplace=True)
+sector_df["Total Trade Volume"] = sector_df["Export Value"] + sector_df["Import Value"]
 
-partner_export_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Import Value"].sum().reset_index()
-partner_export_sector_df.rename(columns={"Partner": "Country", "Import Value": "Partner Export"}, inplace=True)
+df_2026a = sector_df[sector_df["Time Period"] == "2026a"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
+df_2026b = sector_df[sector_df["Time Period"] == "2026b"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
 
-reporter_import_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Import Value"].sum().reset_index()
-reporter_import_sector_df.rename(columns={"Reporter": "Country", "Import Value": "Reporter Import"}, inplace=True)
+df_2026a.columns = [c + "_2026a" for c in df_2026a.columns]
+df_2026b.columns = [c + "_2026b" for c in df_2026b.columns]
 
-partner_import_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Export Value"].sum().reset_index()
-partner_import_sector_df.rename(columns={"Partner": "Country", "Export Value": "Partner Import"}, inplace=True)
+df_merged = df_2026a.join(df_2026b, how="inner").reset_index()
 
-combined_sector_df = reporter_total_sector_df.copy()
-combined_sector_df = combined_sector_df.merge(partner_total_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
-combined_sector_df = combined_sector_df.merge(reporter_export_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
-combined_sector_df = combined_sector_df.merge(partner_export_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
-combined_sector_df = combined_sector_df.merge(reporter_import_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
-combined_sector_df = combined_sector_df.merge(partner_import_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
-
-combined_sector_df.fillna(0, inplace=True)
-combined_sector_df["Total Trade"] = combined_sector_df["Reporter Total"] + combined_sector_df["Partner Total"]
-combined_sector_df["Exports"] = combined_sector_df["Reporter Export"] + combined_sector_df["Partner Export"]
-combined_sector_df["Imports"] = combined_sector_df["Reporter Import"] + combined_sector_df["Partner Import"]
-
-# Melt and pivot to calculate percentage change
-melted = combined_sector_df.melt(id_vars=['Country', 'Time Period', 'Sector Group'], 
-                 var_name='Metric_Year', 
-                 value_name='Value')
-melted[['Metric', 'Year']] = melted['Metric_Year'].str.extract(r'([A-Za-z ]+)\\s?(\\d{4}\\w)?')
-melted['Year'] = melted['Year'].fillna(melted['Time Period'])
-
-pivoted = melted.pivot_table(
-    index=['Country', 'Sector Group'],
-    columns=['Metric', 'Year'],
-    values='Value',
-    aggfunc='first'
-).reset_index()
-
-# Flatten and calculate percentage change
-pivoted.columns = ['_'.join(col).strip('_') for col in pivoted.columns.values]
-pivoted = pivoted.rename(columns={
-    'Country_': 'Country',
-    'Sector Group_': 'Sector Group',
-    'Exports_2026a': 'Export_2026a',
-    'Imports_2026a': 'Import_2026a',
-    'Total Trade_2026a': 'Total_Trade_2026a',
-    'Exports_2026b': 'Export_2026b',
-    'Imports_2026b': 'Import_2026b',
-    'Total Trade_2026b': 'Total_Trade_2026b'
-})
+for col in ["Export Value", "Import Value", "Total Trade Volume"]:
+    df_merged[f"{col} % Change"] = (
+        (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"].replace(0, 1)
+    ) * 100
 
 # for col in ["Export", "Import", "Trade"]:
 #     pivoted[f"{col}s"] = (
@@ -274,7 +235,9 @@ def update_dumbbell_chart(selected_filter, trade_type, class_country, class_sect
         title=f"Change in {trade_type} after Geopolitical Shock",
         xaxis_title=trade_type,
         yaxis_title="" if class_country == "active" else "Country",
-        height=600
+        height=600, 
+        plot_bgcolor = "#ebebeb",
+        paper_bgcolor ="#ffffff"
     )
     return fig
 
