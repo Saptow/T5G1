@@ -65,6 +65,72 @@ pivot = combined_df.pivot(index="Country", columns="Time Period", values=["Total
 percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)
 percent_change.reset_index(inplace=True)
 
+# === Create pivoted for sector-based ranking view ===
+
+# Group by sector and country to prepare detailed trade change breakdowns
+reporter_total_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Total Trade Volume"].sum().reset_index()
+reporter_total_sector_df.rename(columns={"Reporter": "Country", "Total Trade Volume": "Reporter Total"}, inplace=True)
+
+partner_total_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Total Trade Volume"].sum().reset_index()
+partner_total_sector_df.rename(columns={"Partner": "Country", "Total Trade Volume": "Partner Total"}, inplace=True)
+
+reporter_export_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Export Value"].sum().reset_index()
+reporter_export_sector_df.rename(columns={"Reporter": "Country", "Export Value": "Reporter Export"}, inplace=True)
+
+partner_export_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Import Value"].sum().reset_index()
+partner_export_sector_df.rename(columns={"Partner": "Country", "Import Value": "Partner Export"}, inplace=True)
+
+reporter_import_sector_df = df.groupby(["Reporter", "Time Period", "Sector Group"])["Import Value"].sum().reset_index()
+reporter_import_sector_df.rename(columns={"Reporter": "Country", "Import Value": "Reporter Import"}, inplace=True)
+
+partner_import_sector_df = df.groupby(["Partner", "Time Period", "Sector Group"])["Export Value"].sum().reset_index()
+partner_import_sector_df.rename(columns={"Partner": "Country", "Export Value": "Partner Import"}, inplace=True)
+
+combined_sector_df = reporter_total_sector_df.copy()
+combined_sector_df = combined_sector_df.merge(partner_total_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
+combined_sector_df = combined_sector_df.merge(reporter_export_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
+combined_sector_df = combined_sector_df.merge(partner_export_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
+combined_sector_df = combined_sector_df.merge(reporter_import_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
+combined_sector_df = combined_sector_df.merge(partner_import_sector_df, on=["Country", "Time Period", "Sector Group"], how="outer")
+
+combined_sector_df.fillna(0, inplace=True)
+combined_sector_df["Total Trade"] = combined_sector_df["Reporter Total"] + combined_sector_df["Partner Total"]
+combined_sector_df["Exports"] = combined_sector_df["Reporter Export"] + combined_sector_df["Partner Export"]
+combined_sector_df["Imports"] = combined_sector_df["Reporter Import"] + combined_sector_df["Partner Import"]
+
+# Melt and pivot to calculate percentage change
+melted = combined_sector_df.melt(id_vars=['Country', 'Time Period', 'Sector Group'], 
+                 var_name='Metric_Year', 
+                 value_name='Value')
+melted[['Metric', 'Year']] = melted['Metric_Year'].str.extract(r'([A-Za-z ]+)\\s?(\\d{4}\\w)?')
+melted['Year'] = melted['Year'].fillna(melted['Time Period'])
+
+pivoted = melted.pivot_table(
+    index=['Country', 'Sector Group'],
+    columns=['Metric', 'Year'],
+    values='Value',
+    aggfunc='first'
+).reset_index()
+
+# Flatten and calculate percentage change
+pivoted.columns = ['_'.join(col).strip('_') for col in pivoted.columns.values]
+pivoted = pivoted.rename(columns={
+    'Country_': 'Country',
+    'Sector Group_': 'Sector Group',
+    'Exports_2026a': 'Export_2026a',
+    'Imports_2026a': 'Import_2026a',
+    'Total Trade_2026a': 'Total_Trade_2026a',
+    'Exports_2026b': 'Export_2026b',
+    'Imports_2026b': 'Import_2026b',
+    'Total Trade_2026b': 'Total_Trade_2026b'
+})
+
+for col in ["Export", "Import", "Trade"]:
+    pivoted[f"{col}s"] = (
+        (pivoted[f"{col}_2026b"] - pivoted[f"{col}_2026a"]) / pivoted[f"{col}_2026a"].replace(0, 1)
+    ) * 100
+
+
 # === LAYOUT ===
 layout = html.Div([
     dcc.Store(id="view-toggle", data='country'),

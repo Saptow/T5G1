@@ -12,7 +12,7 @@ server = app.server
 
 # Import layouts
 from index import layout as index_layout
-from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c, module5
+from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c, module5old
 
 # Top Navbar with Dropdowns - might need to change dropdown style
 # navbar = dbc.Navbar(
@@ -97,13 +97,13 @@ navbar = dbc.Navbar(
         html.Div([
             html.H5("Or choose a sample article:"),
 
-            html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0,
+            html.Img(src="/assets/news1.png", id="article-img-11", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-            html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0,
+            html.Img(src="/assets/news2.png", id="article-img-21", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-            html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0,
+            html.Img(src="/assets/news3.png", id="article-img-31", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
         ]), 
         #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
@@ -188,13 +188,13 @@ def serve_layout():
                 html.Div([
                     html.H5("Or choose a sample article:"),
 
-                    html.Img(src="/assets/news1.png", id="article-img-1", n_clicks=0,
+                    html.Img(src="/assets/news1.png", id="article-img-11", n_clicks=0,
                              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-                    html.Img(src="/assets/news2.png", id="article-img-2", n_clicks=0,
+                    html.Img(src="/assets/news2.png", id="article-img-21", n_clicks=0,
                              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-                    html.Img(src="/assets/news3.png", id="article-img-3", n_clicks=0,
+                    html.Img(src="/assets/news3.png", id="article-img-31", n_clicks=0,
                              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
                 ]),
 
@@ -210,9 +210,9 @@ def serve_layout():
         # Hidden components to prevent "nonexistent object" errors
         html.Div([
             html.Button(id="submit-url", style={"display": "none"}),
-            html.Img(id="article-img-1", style={"display": "none"}),
-            html.Img(id="article-img-2", style={"display": "none"}),
-            html.Img(id="article-img-3", style={"display": "none"}),
+            html.Img(id="article-img-11", style={"display": "none"}),
+            html.Img(id="article-img-21", style={"display": "none"}),
+            html.Img(id="article-img-31", style={"display": "none"}),
         ], style={"display": "none"})
     ])
 
@@ -237,7 +237,7 @@ def display_page(pathname):
     elif pathname == "/module4b":
         return module4b.layout
     elif pathname == "/module5":
-        return module5.layout
+        return module5old.layout
     elif pathname == "/" or pathname == "":
         return index_layout
     return html.Div("404 - Page not found")
@@ -260,7 +260,7 @@ def update_sidebar(pathname):
     elif pathname == "/module4b":
         return module4b.sidebar_controls
     elif pathname == "/module5":
-        return module5.sidebar_controls
+        return module5old.sidebar_controls
     else:
         return None
 
@@ -322,9 +322,9 @@ def toggle_offcanvas(n_clicks):
     Output("uploaded-url", "data"),
     Output("predict-confirmation", "children"),
     Input("submit-url", "n_clicks"),
-    Input("article-img-1", "n_clicks"),
-    Input("article-img-2", "n_clicks"),
-    Input("article-img-3", "n_clicks"),
+    Input("article-img-11", "n_clicks"),
+    Input("article-img-21", "n_clicks"),
+    Input("article-img-31", "n_clicks"),
     State("news-url-input", "value"),
     prevent_initial_call=True
 )
@@ -332,11 +332,11 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
     ctx_id = callback_context.triggered_id
     if ctx_id == "submit-url" and url_value and url_value.strip():
         return True, url_value.strip(), "✅ Input successfully registered."
-    elif ctx_id == "article-img-1":
+    elif ctx_id == "article-img-11":
         return True, "https://sample-article1.com", "✅ Sample article 1 selected."
-    elif ctx_id == "article-img-2":
+    elif ctx_id == "article-img-21":
         return True, "https://sample-article2.com", "✅ Sample article 2 selected."
-    elif ctx_id == "article-img-3":
+    elif ctx_id == "article-img-31":
         return True, "https://sample-article3.com", "✅ Sample article 3 selected."
     
     return dash.no_update, dash.no_update, dash.no_update

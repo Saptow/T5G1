@@ -168,5 +168,60 @@ def generate_sample_2026(merged_df, output_path="sample_2026.csv", year_base=202
 
     return combined_df  # optional return for inspection
 
-generate_sample_2026(df_2023)
-print(len(df_2023))
+#generate_sample_2026(df_2023)
+#print(len(df_2023))
+
+#unique_countries_a = sorted(merged["country_a"].unique())
+#print(unique_countries_a)
+
+df_raw = pd.read_csv("data/final/historical_data.csv")
+
+new_df = pd.read_csv('sample_2026.csv')
+new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+new_df.drop(columns=['scenario'], inplace=True)
+
+# Drop 'scenario' column from prediction dataset
+
+#new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+#new_df.drop(columns=['scenario'], inplace=True)
+
+
+
+
+# Get only latest year from historical data
+historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
+
+# Reorder new_df to match historical_latest columns
+new_df = new_df[historical_latest.columns]
+
+print("Historical latest year:", historical_latest['year'].unique())
+print("Prediction year:", new_df['year'].unique())
+
+# Merge the two datasets
+merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+#merged_prediction_df.to_csv('testonly.csv' ,index = False)
+
+
+new_df = pd.read_csv('sample_2026.csv')
+
+# Get only latest year from historical data
+historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
+
+new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+new_df.drop(columns=['scenario'], inplace=True)
+
+# Step 2: Ensure column alignment
+new_df = new_df[historical_latest.columns]
+
+# Step 3: Ensure all numeric columns are converted
+for col in new_df.columns:
+    if col not in ['country_a', 'country_b', 'year']:
+        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+
+for col in historical_latest.columns:
+    if col not in ['country_a', 'country_b', 'year']:
+        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+
+# Merge the two datasets
+merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+print(merged_prediction_df.dtypes)
