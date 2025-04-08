@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
 import dash
+import dash_daq as daq
 
 # Load and prepare data
 df = pd.read_csv("priscilla_worldmap_data.csv")
@@ -19,78 +20,110 @@ iso_to_country = {v: k for k, v in country_iso.items()}
 layout = html.Div([
     html.H2("Singapore Total Trade Volume Map Viewer", style={"margin": "20px"}),
 
-    html.Div([
+    html.Div([  # Wrapper for rows
+
+        # Row 1 – Switch on far left, followed by dropdowns
         html.Div([
-            html.Label("Select Base Year:"),
-            dcc.Dropdown(
-                id='base-year',
-                options=[{'label': str(y), 'value': y} for y in years],
-                value=2022,
-                style={"width": "250px"}
-            )
-        ], style={"display": "flex", "flexDirection": "column"}),
+            html.Div([
+                html.Label("Year Mode:"),
+                html.Div([
+                    html.Span("Base Year Only", style={"marginRight": "10px"}),
+                    daq.BooleanSwitch(
+                        id='compare-toggle',
+                        on=False,
+                        color="#000000"
+                    ),
+                    html.Span("Compare Years", style={"marginLeft": "10px"})
+                ], style={"display": "flex", "alignItems": "center", "gap": "10px"})
+            ]),
 
+            html.Div([
+                html.Label("Select Base Year:"),
+                dcc.Dropdown(
+                    id='base-year',
+                    options=[{'label': str(y), 'value': y} for y in years],
+                    value=2022,
+                    style={"width": "250px"}
+                )
+            ]),
+
+            html.Div([
+                html.Label("Select Year to Compare:"),
+                dcc.Dropdown(
+                    id='compare-year',
+                    options=[{'label': str(y), 'value': y} for y in years],
+                    placeholder="",
+                    style={"width": "250px"}
+                )
+            ], id='compare-year-container', style={"display": "none"}),
+
+            html.Div([
+                html.Label("Metric:"),
+                dcc.Dropdown(
+                    id='metric-toggle',
+                    options=[
+                        {'label': 'Change in Total Trade Volume', 'value': 'Change'},
+                        {'label': '% Change from Base Year', 'value': 'Percent Change'}
+                    ],
+                    value='Change',
+                    style={"width": "275px"}
+                )
+            ], id='metric-container', style={"display": "none"})
+        ], style={"display": "flex", "gap": "25px", "flexWrap": "wrap", "marginBottom": "20px"}),
+
+        # Row 2 – Country Filter Mode, Top N / Countries, Sector
         html.Div([
-            html.Label("Select Year to Compare (Optional):"),
-            dcc.Dropdown(
-                id='compare-year',
-                options=[{'label': str(y), 'value': y} for y in years],
-                placeholder="Show base year if left empty",
-                style={"width": "250px"}
-            )
-        ], style={"display": "flex", "flexDirection": "column"}),
+            html.Div([
+                html.Label("Country Mode:"),
+                html.Div([
+                    html.Span("Custom Countries", style={"marginRight": "10px"}),
+                    daq.BooleanSwitch(
+                        id='use-topn-toggle',
+                        on=True,
+                        color="#000000"
+                    ),
+                    html.Span("Top N", style={"marginLeft": "10px"})
+                ], style={"display": "flex", "alignItems": "center", "gap": "10px"})
+            ]),
 
-        html.Div([
-            html.Label("Metric:"),
-            dcc.Dropdown(
-                id='metric-toggle',
-                options=[
-                    {'label': 'Change in Total Trade Volume', 'value': 'Change'},
-                    {'label': '% Change from Base Year', 'value': 'Percent Change'}
-                ],
-                value='Change',
-                style={"width": "275px"}
-            )
-        ], style={"display": "flex", "flexDirection": "column"}),
+            html.Div([
+                html.Label("Top N Range:"),
+                dcc.RangeSlider(
+                    id='topn-range-slider',
+                    min=0,
+                    max=len(countries),
+                    value=[0, 0],
+                    marks={i: str(i) for i in range(0, len(countries)+1)},
+                    step=1,
+                    tooltip={"placement": "bottom"}
+                ),
+                html.Div(id="topn-preview", style={"marginTop": "10px", "fontSize": "14px", "color": "#555"})
+            ], id="topn-container", style={"width": "400px", "paddingTop": "10px", "display": "block"}),
 
-        html.Div([
-            html.Label("Top N Range (optional):"),
-            dcc.RangeSlider(
-                id='topn-range-slider',
-                min=0,
-                max=len(countries),
-                value=[0, 0],
-                marks={i: str(i) for i in range(0, len(countries)+1)},
-                step=1,
-                tooltip={"placement": "bottom"}
-            ),
-            html.Div(id="topn-preview", style={"marginTop": "10px", "fontSize": "14px", "color": "#555"})
-        ], style={"width": "400px", "paddingTop": "10px"})
-    ], style={"display": "flex", "gap": "25px", "flexWrap": "wrap", "margin": "10px"}),
+            html.Div([
+                html.Label("Select Countries:"),
+                dcc.Dropdown(
+                    id='country-filter',
+                    options=[{'label': c, 'value': c} for c in countries],
+                    value=[],
+                    multi=True,
+                    className="mb-3",
+                    style={"width": "600px"}
+                )
+            ], id="country-dropdown-container", style={"paddingBottom": "10px", "display": "none"}),
 
-    html.Div([
-        html.Label("Select Sectors:"),
-        dcc.Dropdown(
-            id='sector-filter',
-            options=[{'label': s, 'value': s} for s in sectors],
-            value=sectors,
-            multi=True,
-            className="mb-3"
-        ),
-
-        html.Label("Select Countries:"),
-        dcc.Dropdown(
-            id='country-filter',
-            options=[{'label': c, 'value': c} for c in countries],
-            value=[],
-            multi=True,
-            className="mb-3"
-        )
-    ], style={"padding": "0 40px"}),
-
-    # html.Div([
-    #     dcc.Graph(id='map-heatmap')
-    # ]),
+            html.Div([
+                html.Label("Select Sectors:"),
+                dcc.Dropdown(
+                    id='sector-filter',
+                    options=[{'label': s, 'value': s} for s in sectors],
+                    value=sectors,
+                    multi=True,
+                    style={"width": "600px"}
+                )
+            ])
+        ], style={"display": "flex", "gap": "25px", "flexWrap": "wrap"})
+    ], style={"margin": "20px"}),  # Close wrapper
 
     html.Div([
         dcc.Tabs(id='chart-tabs', value='line', children=[
@@ -107,14 +140,13 @@ layout = html.Div([
     html.Div(id="tab-warning2", className="text-danger mb-2 text-center"),
 
     dcc.Tabs(id="module2-tabs", value="historical", children=[
-         dcc.Tab(label="Historical", value="historical"),
-         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
-     ]),
-    
-    html.Div(id="module2-tabs-container"),
+        dcc.Tab(label="Historical", value="historical"),
+        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
+    ]),
 
+    html.Div(id="module2-tabs-container"),
     html.Div(id="module2-tab-content", className="mt-3"),
-    # === Hidden dummy components to make Dash recognize outputs ===
+
     html.Div([
         html.Div(id='sector-title2', style={'display': 'none'}),
         dcc.Graph(id='map-heatmap', style={'display': 'none'}),
@@ -133,9 +165,11 @@ def register_callbacks(app):
         Input('sector-filter', 'value'),
         Input('country-filter', 'value'),
         Input('metric-toggle', 'value'),
-        Input('topn-range-slider', 'value')
+        Input('topn-range-slider', 'value'),
+        Input('use-topn-toggle', 'on'),
+        Input('compare-toggle', 'on')
     )
-    def update_map(base_year, compare_year, selected_sectors, selected_countries, metric, topn_range):
+    def update_map(base_year, compare_year, selected_sectors, selected_countries, metric, topn_range, use_topn, compare_on):
         if not base_year:
             raise PreventUpdate
 
@@ -148,14 +182,20 @@ def register_callbacks(app):
         grouped = filtered.groupby(['Country', 'Country Code', 'Lat', 'Lon', 'Year'])['Total Volume'].sum().reset_index()
         pivoted = grouped.pivot(index=['Country', 'Country Code', 'Lat', 'Lon'], columns='Year', values='Total Volume').reset_index()
 
-        if compare_year:
-            pivoted['Change'] = pivoted.get(compare_year, 0) - pivoted.get(base_year, 0)
-            pivoted['Percent Change'] = ((pivoted.get(compare_year, 0) - pivoted.get(base_year, 0)) / pivoted.get(base_year, 1)) * 100
-        else:
+        if not compare_on:
             pivoted['Change'] = pivoted.get(base_year, 0)
             pivoted['Percent Change'] = 0
+            metric = 'Change'
+        else:
+            if compare_year:
+                pivoted['Change'] = pivoted.get(compare_year, 0) - pivoted.get(base_year, 0)
+                pivoted['Percent Change'] = (
+                    (pivoted.get(compare_year, 0) - pivoted.get(base_year, 0)) / pivoted.get(base_year, 1)
+                ) * 100
+            else:
+                pivoted['Change'] = pivoted.get(base_year, 0)
+                pivoted['Percent Change'] = 0
 
-        # Combine selected countries and top-N countries
         all_countries = set(selected_countries or [])
         topn_text = ""
         if topn_range[1] > topn_range[0]:
@@ -163,16 +203,21 @@ def register_callbacks(app):
             end_idx = topn_range[1]
             top_n_df = pivoted.sort_values(metric, ascending=False).iloc[start_idx:end_idx]
             top_n = top_n_df['Country']
-            all_countries.update(top_n)
+            if use_topn:
+                all_countries.update(top_n)
             topn_text = "Top N Countries: " + ", ".join(top_n.tolist())
 
         pivoted = pivoted[pivoted['Country'].isin(all_countries)]
 
         pivoted['hover'] = pivoted.apply(
-            lambda row: f"Country: {row['Country']}<br>" +
-                        (f"% Change: {row['Percent Change']:.2f}%<br>" if row['Percent Change'] else '') +
-                        (f"Change in Trade Volume: {row['Change']:.2f}<br>" if row['Change'] else '') +
-                        f"<extra></extra>", axis=1)
+            lambda row: (
+                f"Country: {row['Country']}<br>" +
+                (f"Total Trade Volume: {row['Change']:.2f}<br>" if not compare_on else "") +
+                (f"% Change: {row['Percent Change']:.2f}%<br>" if compare_on else "") +
+                (f"Change in Trade Volume: {row['Change']:.2f}<br>" if compare_on else "") +
+                "<extra></extra>"
+            ), axis=1
+        )
 
         fig = px.choropleth(
             pivoted,
@@ -188,6 +233,26 @@ def register_callbacks(app):
         fig.update_coloraxes(colorbar_title=metric)
 
         return fig, topn_text
+
+    @app.callback(
+        Output('compare-year-container', 'style'),
+        Output('metric-container', 'style'),
+        Input('compare-toggle', 'on')
+    )
+    def toggle_compare_mode(compare_on):
+        if compare_on:
+            return {"display": "block"}, {"display": "block"}
+        return {"display": "none"}, {"display": "none"}
+
+    @app.callback(
+        Output('topn-container', 'style'),
+        Output('country-dropdown-container', 'style'),
+        Input('use-topn-toggle', 'on')
+    )
+    def toggle_filter_visibility(use_topn):
+        if use_topn:
+            return {"width": "400px", "paddingTop": "10px", "display": "block"}, {"display": "none"}
+        return {"display": "none"}, {"paddingBottom": "10px", "display": "block"}
 
     @app.callback(
         Output('country-trend', 'figure'),
@@ -218,24 +283,13 @@ def register_callbacks(app):
         }).reset_index()
 
         if chart_type == 'line':
-            fig = px.line(
-                country_df,
-                x='Year',
-                y=['Total Volume', 'Export Volume', 'Import Volume'],
-                markers=True,
-                title=f"{country} Trade Volume Breakdown"
-            )
+            fig = px.line(country_df, x='Year', y=['Total Volume', 'Export Volume', 'Import Volume'],
+                          markers=True, title=f"{country} Trade Volume Breakdown")
         else:
             melted = country_df.melt(id_vars='Year', value_vars=['Total Volume', 'Export Volume', 'Import Volume'],
                                      var_name='Metric', value_name='Value')
-            fig = px.bar(
-                melted,
-                x='Year',
-                y='Value',
-                color='Metric',
-                barmode='group',
-                title=f"{country} Trade Volume Breakdown"
-            )
+            fig = px.bar(melted, x='Year', y='Value', color='Metric', barmode='group',
+                         title=f"{country} Trade Volume Breakdown")
 
         fig.update_traces(hovertemplate='Year: %{x}<br>Value: %{y:.2f} Billion SGD<extra></extra>')
         fig.update_layout(yaxis_title="Billion SGD", legend_title="Metric")
@@ -245,7 +299,6 @@ def register_callbacks(app):
 @app.callback(
     Output("prediction-tab2", "disabled"),
     Input("input-uploaded", "data"),
-    #prevent_initial_call=True
 )
 def toggle_prediction_tab(uploaded):
     return not uploaded
@@ -280,4 +333,4 @@ def render_tab_content(tab):
 app.layout = layout
 register_callbacks(app)
 
-sidebar_controls  = html.Div([])
+sidebar_controls = html.Div([])
