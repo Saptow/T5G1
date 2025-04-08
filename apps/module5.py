@@ -98,40 +98,45 @@ layout = html.Div([
     dcc.Store(id="view-toggle", data='country'),
 
     html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="text-center mb-3"),
-
-    html.Div([
         html.Div([
-            html.Div("Country View", style={"marginRight": "10px", "marginBottom": "0"}),
+            # 1. Toggle Switch Section
+            html.Div([
+                html.P("1. Sector/Country View:", style={"marginBottom": "6px"}),
 
-            daq.BooleanSwitch(
-                id="view-toggle-switch",
-                on=True,
-                color="#000000",
-                style={"marginRight": "10px"}
-            ),
+                html.Div([
+                    html.Div("Country View", style={"marginRight": "10px", "marginBottom": "0"}),
+                    daq.BooleanSwitch(
+                        id="view-toggle-switch",
+                        on=True,
+                        color="#000000",  # black color when ON
+                        style={"marginRight": "10px"}
+                    ),
+                    html.Div("Sector View", style={"marginLeft": "10px", "marginBottom": "0"})
+                ], style={"display": "flex", "alignItems": "center"})
+            ], style={"marginRight": "30px"}),
 
-            html.Div("Sector View", style={"marginLeft": "10px", "marginBottom": "0"})
-        ], style={"display": "flex", "alignItems": "center", "marginRight": "30px"}),
+            # 2. Filter Dropdown
+            html.Div([
+                html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
+                dcc.Dropdown(id="filter-dropdown", placeholder="", style={"width": "220px"})
+            ], style={"marginRight": "30px"}),
 
-        html.Div([
-            html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
-            dcc.Dropdown(id="filter-dropdown", placeholder="", style={"width": "220px"})
-        ], style={"marginRight": "30px"}),
+            # 3. Trade Type Dropdown
+            html.Div([
+                html.P("3. Trade Type:", style={"marginBottom": "2px"}),
+                dcc.Dropdown(
+                    id="trade-type-dropdown",
+                    options=[
+                        {"label": "Total Trade Volume", "value": "Total Trade Volume"},
+                        {"label": "Export Value", "value": "Export Value"},
+                        {"label": "Import Value", "value": "Import Value"}
+                    ],
+                    placeholder="",
+                    style={"width": "220px"}
+                )
+            ])
+        ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"}, className="mb-4"),
 
-        html.Div([
-            html.P("3. Select Trade Type:", style={"marginBottom": "2px"}),
-            dcc.Dropdown(
-                id="trade-type-dropdown",
-                options=[
-                    {"label": "Total Trade Volume", "value": "Total Trade Volume"},
-                    {"label": "Export Value", "value": "Export Value"},
-                    {"label": "Import Value", "value": "Import Value"}
-                ],
-                placeholder="",
-                style={"width": "220px"}
-            )
-        ])
-    ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"}, className="mb-4"),
 
     dcc.Tabs(id="trade-tabs", value="ranking", children=[
         dcc.Tab(label="Ranking", value="ranking"),
