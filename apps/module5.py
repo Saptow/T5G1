@@ -268,27 +268,15 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
 def update_ranking_chart(selected_filter, trade_type, is_country_view):
     if not is_country_view:
         if not selected_filter:
-            print("A")
-            print(trade_type)
-            print(selected_filter)
-            print(is_country_view)
             df_sorted = percent_change.sort_values(by=trade_type, ascending=False)
             title_suffix = ""
             y_value = "Reporter"
         else:
-            print("B")
-            print(trade_type)
-            print(selected_filter)
-            print(is_country_view)
             df_sorted = df_merged[df_merged["Sector Group"] == selected_filter].sort_values(by=trade_type, ascending=False)
             title_suffix = f" — {selected_filter}"
             y_value = "Reporter"
 
     if is_country_view:
-        print("C")
-        print(trade_type)
-        print(selected_filter)
-        print(is_country_view)
         df_sorted = df_merged[df_merged["Reporter"] == selected_filter].sort_values(by=trade_type, ascending=False)
         title_suffix = f" — {selected_filter}"
         y_value = "Sector Group"
