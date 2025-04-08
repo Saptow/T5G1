@@ -24,12 +24,12 @@ class Trainer(object):
         self.train_per_epoch = len(train_loader)
         if val_loader != None:
             self.val_per_epoch = len(val_loader)
-        self.best_path = os.path.join(self.args.log_dir, 'best_model.pth')
+        self.best_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}', f'best_model_lr{args.lr_init}/{args.embed_dim}.pth')
         self.loss_figure_path = os.path.join(self.args.log_dir, 'loss.png')
         #log
         if os.path.isdir(args.log_dir) == False and not args.debug:
             os.makedirs(args.log_dir, exist_ok=True)
-        self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug)
+        self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug,args=args)
         self.logger.info('Experiment log path in: {}'.format(args.log_dir))
         #if not args.debug:
         #self.logger.info("Argument: %r", args)
@@ -156,6 +156,9 @@ class Trainer(object):
 
         #save the best model to file
         if not self.args.debug:
+            parent_dir = os.path.dirname(self.best_path)
+            if not os.path.exists(parent_dir):
+                os.makedirs(parent_dir)
             torch.save(best_model, self.best_path)
             self.logger.info("Saving current best model to " + self.best_path)
 
