@@ -125,10 +125,10 @@ pivoted = pivoted.rename(columns={
     'Total Trade_2026b': 'Total_Trade_2026b'
 })
 
-for col in ["Export", "Import", "Trade"]:
-    pivoted[f"{col}s"] = (
-        (pivoted[f"{col}_2026b"] - pivoted[f"{col}_2026a"]) / pivoted[f"{col}_2026a"].replace(0, 1)
-    ) * 100
+# for col in ["Export", "Import", "Trade"]:
+#     pivoted[f"{col}s"] = (
+#         (pivoted[f"{col}_2026b"] - pivoted[f"{col}_2026a"]) / pivoted[f"{col}_2026a"].replace(0, 1)
+#     ) * 100
 
 
 # === LAYOUT ===

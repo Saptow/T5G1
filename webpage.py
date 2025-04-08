@@ -12,7 +12,7 @@ server = app.server
 
 # Import layouts
 from index import layout as index_layout
-from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c, module5old
+from apps import module1a, module1b, module2, module3a, module3b, module4a, module4b, module4c, module5a, module5b, module5c, module5
 
 # Top Navbar with Dropdowns - might need to change dropdown style
 # navbar = dbc.Navbar(
@@ -237,7 +237,7 @@ def display_page(pathname):
     elif pathname == "/module4b":
         return module4b.layout
     elif pathname == "/module5":
-        return module5old.layout
+        return module5.layout
     elif pathname == "/" or pathname == "":
         return index_layout
     return html.Div("404 - Page not found")
@@ -260,7 +260,7 @@ def update_sidebar(pathname):
     elif pathname == "/module4b":
         return module4b.sidebar_controls
     elif pathname == "/module5":
-        return module5old.sidebar_controls
+        return module5.sidebar_controls
     else:
         return None
 
