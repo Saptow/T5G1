@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from dash import dcc, html, Input, Output, State, callback_context, get_app
 import dash
 import pycountry 
+import dash_daq as daq
 
 app = get_app()
 
@@ -100,12 +101,17 @@ layout = html.Div([
 
     html.Div([
         html.Div([
-            html.P("1. Select Country/Sector:", style={"marginBottom": "2px"}),
-            html.Div([
-                html.Button("By Country", id="btn-country", n_clicks=0, className="inactive", style={"marginRight": "5px"}),
-                html.Button("By Sector", id="btn-sector", n_clicks=0, className="inactive")
-            ])
-        ], style={"marginRight": "30px"}),
+            html.Div("Country View", style={"marginRight": "10px", "marginBottom": "0"}),
+
+            daq.BooleanSwitch(
+                id="view-toggle-switch",
+                on=True,
+                color="#000000",
+                style={"marginRight": "10px"}
+            ),
+
+            html.Div("Sector View", style={"marginLeft": "10px", "marginBottom": "0"})
+        ], style={"display": "flex", "alignItems": "center", "marginRight": "30px"}),
 
         html.Div([
             html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
@@ -151,14 +157,18 @@ def render_tab(tab):
 
 # === DUMBBELL CALLBACKS ===
 @app.callback(
-    Output("btn-country", "className"),
-    Output("btn-sector", "className"),
     Output("filter-dropdown", "options"),
     Output("filter-dropdown", "placeholder"),
     Output("filter-dropdown", "value"),
-    Input("btn-country", "n_clicks"),
-    Input("btn-sector", "n_clicks")
+    Input("view-toggle-switch", "on")
 )
+def update_dropdown_options(is_country_view):
+    if is_country_view:
+        return [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())], "Choose a specific country", None
+    else:
+        return [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())], "Choose a specific sector", None
+
+
 def update_button_style(n_country, n_sector):
     ctx = callback_context
     if not ctx.triggered:
@@ -174,17 +184,16 @@ def update_button_style(n_country, n_sector):
     Output("dumbbell-graph", "figure"),
     Input("filter-dropdown", "value"),
     Input("trade-type-dropdown", "value"),
-    State("btn-country", "className"),
-    State("btn-sector", "className")
+    Input("view-toggle-switch", "on")  # this returns True (country) or False (sector)
 )
-def update_dumbbell_chart(selected_filter, trade_type, class_country, class_sector):
+def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
     if not selected_filter or not trade_type:
         raise dash.exceptions.PreventUpdate
 
     change_col = f"{trade_type} % Change"
     df_plot = df_merged.copy()
 
-    if class_country == "active":
+    if is_country_view:
         df_plot = df_plot[df_plot["Reporter"] == selected_filter]
         y_axis = df_plot["Sector Group"]
     else:
@@ -234,12 +243,13 @@ def update_dumbbell_chart(selected_filter, trade_type, class_country, class_sect
     fig.update_layout(
         title=f"Change in {trade_type} after Geopolitical Shock",
         xaxis_title=trade_type,
-        yaxis_title="" if class_country == "active" else "Country",
+        yaxis_title="" if is_country_view else "Country",
         height=600, 
-        plot_bgcolor = "#ebebeb",
-        paper_bgcolor ="#ffffff"
+        plot_bgcolor="#ebebeb",
+        paper_bgcolor="#ffffff"
     )
     return fig
+
 
 # === RANKING CALLBACK ===
 @app.callback(
