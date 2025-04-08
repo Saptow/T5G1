@@ -35,21 +35,22 @@ for role, col_name in [("Reporter", "Reporter"), ("Partner", "Partner")]:
         ("Import Value", f"{col_name} Import")
     ]:
         temp = df_raw.groupby([role, "Time Period"])[metric].sum().reset_index()
-        temp.rename(columns={role: "Country", metric: new_col}, inplace=True)
+        temp.rename(columns={role: "Reporter", metric: new_col}, inplace=True)
         country_metrics[new_col] = temp
 
 combined_df = country_metrics["Reporter Total"]
 for key in list(country_metrics.keys())[1:]:
-    combined_df = combined_df.merge(country_metrics[key], on=["Country", "Time Period"], how="outer")
+    combined_df = combined_df.merge(country_metrics[key], on=["Reporter", "Time Period"], how="outer")
 
 combined_df.fillna(0, inplace=True)
-combined_df["Total Trade"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
-combined_df["Exports"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
-combined_df["Imports"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
+combined_df["Total Trade Volume"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
+combined_df["Export Value"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
+combined_df["Import Value"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
 
-pivot = combined_df.pivot(index="Country", columns="Time Period", values=["Total Trade", "Exports", "Imports"])
+pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade Volume", "Export Value", "Import Value"])
 percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)
 percent_change.reset_index(inplace=True)
+
 
 # === 3. SECTOR-LEVEL TRANSFORMATION ===
 import_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_import" in c]
@@ -83,9 +84,10 @@ df_2026b.columns = [c + "_2026b" for c in df_2026b.columns]
 df_merged = df_2026a.join(df_2026b, how="inner").reset_index()
 
 for col in ["Export Value", "Import Value", "Total Trade Volume"]:
-    df_merged[f"{col} % Change"] = (
+    df_merged[f"{col}"] = (
         (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"].replace(0, 1)
     ) * 100
+
 
 # for col in ["Export", "Import", "Trade"]:
 #     pivoted[f"{col}s"] = (
@@ -131,7 +133,7 @@ layout = html.Div([
                         {"label": "Export Value", "value": "Export Value"},
                         {"label": "Import Value", "value": "Import Value"}
                     ],
-                    placeholder="",
+                    placeholder="-",
                     style={"width": "220px"}
                 )
             ])
@@ -195,7 +197,7 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
     if not selected_filter or not trade_type:
         raise dash.exceptions.PreventUpdate
 
-    change_col = f"{trade_type} % Change"
+    change_col = f"{trade_type}"
     df_plot = df_merged.copy()
 
     if is_country_view:
@@ -259,20 +261,41 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
 # === RANKING CALLBACK ===
 @app.callback(
     Output("percent-change-bar", "figure"),
+    Input("filter-dropdown", "value"),
     Input("trade-type-dropdown", "value"),
-    Input("filter-dropdown", "value")
+    Input("view-toggle-switch", "on")  # this returns True (country) or False (sector)
 )
-def update_ranking_chart(trade_type, selected_sector):
-    if selected_sector is None:
-        df_sorted = percent_change.sort_values(by=trade_type, ascending=False)
-        title_suffix = ""
-    else:
-        df_sorted = pivoted[pivoted["Sector Group"] == selected_sector].sort_values(by=trade_type, ascending=False)
-        title_suffix = f" — {selected_sector}"
+def update_ranking_chart(selected_filter, trade_type, is_country_view):
+    if not is_country_view:
+        if not selected_filter:
+            print("A")
+            print(trade_type)
+            print(selected_filter)
+            print(is_country_view)
+            df_sorted = percent_change.sort_values(by=trade_type, ascending=False)
+            title_suffix = ""
+            y_value = "Reporter"
+        else:
+            print("B")
+            print(trade_type)
+            print(selected_filter)
+            print(is_country_view)
+            df_sorted = df_merged[df_merged["Sector Group"] == selected_filter].sort_values(by=trade_type, ascending=False)
+            title_suffix = f" — {selected_filter}"
+            y_value = "Reporter"
+
+    if is_country_view:
+        print("C")
+        print(trade_type)
+        print(selected_filter)
+        print(is_country_view)
+        df_sorted = df_merged[df_merged["Reporter"] == selected_filter].sort_values(by=trade_type, ascending=False)
+        title_suffix = f" — {selected_filter}"
+        y_value = "Sector Group"
 
     fig = px.bar(
         df_sorted,
-        y="Country",
+        y= y_value,
         x=trade_type,
         orientation='h',
         color=trade_type,
