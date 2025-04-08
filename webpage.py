@@ -265,19 +265,19 @@ def update_sidebar(pathname):
         return None
 
 # === Navigation from Homepage (e.g., click bar/image) -- include stat boxes clickability here -- 
-@app.callback(
-    Output("url", "pathname"),
-    [Input("go-to-module1", "n_clicks"),
-     Input("go-to-module2", "n_clicks")],
-    prevent_initial_call=True
-)
-def navigate(go1, go2):
-    ctx = callback_context.triggered_id
-    if ctx == "go-to-module1" and go1:
-        return "/module1a"
-    elif ctx == "go-to-module2" and go2:
-        return "/module2"
-    return dash.no_update
+#@app.callback(
+#   Output("url", "pathname"),
+#    [Input("go-to-module1", "n_clicks"),
+#    Input("go-to-module2", "n_clicks")],
+#    prevent_initial_call=True
+#)
+#def navigate(go1, go2):
+#   ctx = callback_context.triggered_id
+#    if ctx == "go-to-module1" and go1:
+#        return "/module1a"
+#    elif ctx == "go-to-module2" and go2:
+#        return "/module2"
+#    return dash.no_update
 
 ### Predict Button Callback
 @app.callback(
