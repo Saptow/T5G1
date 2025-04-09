@@ -24,31 +24,32 @@ body {
     margin-left: 2rem;
 }
 
-/* Nav item links and dropdown labels */
+/* === Navbar links and dropdown toggles (TOP BAR ONLY) === */
 .navbar .nav-link,
-.navbar .dropdown-toggle,
-.navbar .dropdown-menu .dropdown-item {
+.navbar .dropdown-toggle {
     color: white !important;
     font-weight: 500;
     font-size: 1.0rem;
-    transition: background-color 0.3s ease;
 }
 
-/* Dropdown menu */
+/* === Dropdown menu styling (the box that opens) === */
 .dropdown-menu {
-    background-color: white;
+    background-color: white; /* Light background for dropdown */
     border: none;
 }
 
-.dropdown-item {
-    color: black; 
-    background-color: white; 
+/* === Dropdown item options (inside dropdown menu) === */
+.dropdown-menu .dropdown-item {
+    color: black !important; /* Black text for dropdown options */
+    background-color: white;
 }
 
-.dropdown-item:hover {
-    color: black; 
-    background-color: white; 
+/* === Hover effect on dropdown items === */
+.dropdown-menu .dropdown-item:hover {
+    background-color: #f1f1f1;
+    color: black !important;
 }
+
 
 /* === Page Content === */
 #page-content {
