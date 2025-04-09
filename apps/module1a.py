@@ -1,344 +1,333 @@
-# === module1.py ===
-# ✅ This is now a PLUGGABLE MODULE, not a standalone app
-
 import pandas as pd
 import plotly.express as px
 from dash import dcc, html, Input, Output, State, callback_context, get_app
 import dash
 import dash_bootstrap_components as dbc
+import dash_daq as daq
 
-# === Load Data ===
-df = pd.read_csv("trade_data_realistic_changes.csv")
-df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
-df['previous_volume'] = pd.to_numeric(df['previous_volume'], errors='coerce')
 
-COUNTRY_LIST = sorted(df['country'].unique())
-MAX_TOP_N = 20
+# === Load and Prepare Data ===
+df_raw = pd.read_csv("data/final/historical_data.csv")
+df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
 
-# ✅ CHANGED: No Dash() instance created — we’re not calling Dash(__name__)
-# We'll use the main app instance from app.py instead
+# Get latest and previous year
+latest_year = df_raw['year'].max()
+prev_year = df_raw['year'][df_raw['year'] < latest_year].max()
 
-# ✅ CHANGED: Export a layout variable to plug into app.py
-# layout = html.Div([
-#     html.Div([
-#         html.H1("Trade Explorer Dashboard", className="text-center mb-4", style={'color': '#2c3e50'}),
+# Filter only the latest two years
+df = df_raw[df_raw['year'].isin([latest_year, prev_year])].copy()
 
-#         dbc.CardBody([
-#             dbc.Row([
-#                 dbc.Col([
-#                     html.Label([
-#                         html.B("Country:"),
-#                         html.I(className="bi bi-info-circle ms-1", id="tooltip-country")
-#                     ]),
-#                     dcc.Dropdown(
-#                         id='country-select',
-#                         options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
-#                         value=COUNTRY_LIST[0],
-#                         placeholder='Select a country',
-#                         searchable=True,
-#                         className='input-dropdown'
-#                     ),
-#                 ], xs=12, sm=12, md=4),
-#             ], className='mb-3', justify='center'),
+SECTOR_LABELS = {
+    "bec_1": "Food and Agriculture",
+    "bec_2": "Energy and Mining",
+    "bec_3": "Construction and Housing",
+    "bec_4": "Textile and Footwear",
+    "bec_5": "Transport and Travel",
+    "bec_6": "ICT and Business",
+    "bec_7": "Health and Education",
+    "bec_8": "Government and Others"
+}
 
-#             dbc.Row([
-#                 dbc.Col([
-#                     dbc.ButtonGroup([
-#                         dbc.Button("Exports", id='btn-export', n_clicks=0, color='primary', outline=True, size='sm'),
-#                         dbc.Button("Imports", id='btn-import', n_clicks=0, color='secondary', outline=True, size='sm')
-#                     ], className='w-100')
-#                 ], width=4)
-#             ], justify='center', className='mb-2'),
+COUNTRY_LABELS = {
+    "ARE": "United Arab Emirates",
+    "AUS": "Australia",
+    "CHE": "Switzerland",
+    "CHN": "China",
+    "DEU": "Germany",
+    "FRA": "France",
+    "HKG": "Hong Kong",
+    "IDN": "Indonesia",
+    "IND": "India",
+    "JPN": "Japan",
+    "KOR": "South Korea",
+    "MYS": "Malaysia",
+    "NLD": "Netherlands",
+    "PHL": "Philippines",
+    "SGP": "Singapore",
+    "THA": "Thailand",
+    "USA": "United States",
+    "VNM": "Vietnam"
+}
 
-#             dbc.Row([
-#                 dbc.Col([
-#                     dbc.ButtonGroup([
-#                         dbc.Button("Volume", id='btn-volume', n_clicks=0, color='primary', outline=True, size='sm'),
-#                         dbc.Button("Percentage", id='btn-percentage', n_clicks=0, color='secondary', outline=True, size='sm')
-#                     ], className='w-100')
-#                 ], width=4)
-#             ], justify='center', className='mb-2'),
+COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
+COUNTRY_LIST = sorted(COUNTRY_LABELS.values())
+SECTOR_LIST = list(SECTOR_LABELS.values())
 
-#             dbc.Row([
-#                 dbc.Col([
-#                     html.Label(html.B("Partner Country:")),
-#                     dcc.Dropdown(id='country-select-alt2', searchable=True, className='input-dropdown'),
-#                 ], xs=12, sm=12, md=4),
+# === Fix: Correct Treemap Share Calculation ===
+def calculate_country_shares(data, trade_type, selected_sector):
+    sector_code = [k for k, v in SECTOR_LABELS.items() if v == selected_sector][0]
 
-#                 dbc.Col([
-#                     html.Label(html.B("Sector:")),
-#                     dcc.Dropdown(id='sector-select-alt', searchable=True, className='input-dropdown'),
-#                 ], xs=12, sm=12, md=4),
-#             ], className='mb-3', justify='center'),
+    if trade_type == "export":
+        col = f"{sector_code}_export_A_to_B"
+    elif trade_type == "import":
+        col = f"{sector_code}_import_A_from_B"
+    else:
+        export_col = f"{sector_code}_export_A_to_B"
+        import_col = f"{sector_code}_import_A_from_B"
+        data[col] = data[export_col] + data[import_col]
 
-#             dbc.Row([
-#                 dbc.Col([
-#                     html.Label(html.B("View Top N:")),
-#                     dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,
-#                                tooltip={"placement": "bottom", "always_visible": True})
-#                 ], width=8)
-#             ], justify='center')
-#         ]),
+    pivot = data.groupby(["country_b", "year"])[col].sum().unstack().fillna(0)
+    pivot.columns = ['Previous', 'Current']
+    pivot['Total_Current'] = pivot['Current'].sum()
+    pivot['Total_Previous'] = pivot['Previous'].sum()
 
-#         dcc.Loading([
-#             html.Div([
-#                 html.Div(style={'marginTop': '20px'}),
-#                 html.H5(id='sector-title', className="text-center mb-2"),
-#                 dcc.Graph(id='sector-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
-#             ], className='mb-4'),
+    pivot['current_share'] = 100 * pivot['Current'] / pivot['Total_Current']
+    pivot['previous_share'] = 100 * pivot['Previous'] / pivot['Total_Previous']
+    pivot['change'] = pivot['current_share'] - pivot['previous_share']
+    pivot['share_change_clipped'] = pivot['change'].clip(-50, 50)
 
-#             html.Div([
-#                 html.H5(id='country-title', className="text-center mb-2"),
-#                 dcc.Graph(id='country-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"})
-#             ])
-#         ])
-#     ], style={
-#         'backgroundColor': '#ffffff',
-#         'padding': '30px',
-#         'fontFamily': 'Open Sans, sans-serif',
-#         'borderRadius': '12px',
-#         'boxShadow': '0 2px 6px rgba(0,0,0,0.1)',
-#         'margin': '20px'
-#     }),
+    pivot = pivot.reset_index().rename(columns={"country_b": "Country"})
+    pivot['Country'] = pivot['Country'].map(COUNTRY_LABELS)
+    pivot = pivot.dropna(subset=["Country"])
 
-#     dcc.Store(id='trade-type-select', data='export'),
-#     dcc.Store(id='display-type', data='volume'),
-#     dbc.Tooltip("Select the reporting country", target="tooltip-country")
-# ])
+    return pivot
 
 layout = html.Div([
+    dcc.Store(id="trade-type-select1a", data='total'),
+    dcc.Store(id="display-type1a", data='percentage'),
+
+    html.H1("Trade by Sector and Partner Country", className="text-center mb-4", style={'color': '#2c3e50'}),
+
     html.Div([
-        html.H1("Trade Explorer Dashboard", className="text-center mb-4", style={'color': '#2c3e50'}),
+        html.Div([
+            html.Label("Select Country A", className="form-label fw-semibold mb-1"),
+            dcc.Dropdown(
+                id='reporter-country-dropdown',
+                options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
+                value='Singapore',
+                className="mb-3",
+                style={"width": "100%"}
+            )
+        ], className="col-md-6"),
 
-        dcc.Loading([
-            html.Div([
-                html.Div(style={'marginTop': '20px'}),
-                html.H5(id='sector-title', className="text-center mb-2"),
-                dcc.Graph(id='sector-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
-            ], className='mb-4'),
+        html.Div([
+            html.Label("Select Sector", className="form-label fw-semibold mb-1"),
+            dcc.Dropdown(
+                id='sector-dropdown',
+                options=[{'label': s, 'value': s} for s in SECTOR_LIST],
+                value='Food and Agriculture',
+                className="mb-3",
+                style={"width": "100%"}
+            )
+        ], className="col-md-6")
+    ], className="row mb-3"),
 
-            html.Div([
-                html.H5(id='country-title', className="text-center mb-2"),
-                dcc.Graph(id='country-treemap', config={'displayModeBar': False}, style={"backgroundColor": "white"})
-            ])
-        ])
-    ], style={
-        'backgroundColor': '#ffffff',
-        'padding': '30px',
-        'fontFamily': 'Open Sans, sans-serif',
-        'borderRadius': '12px',
-        'boxShadow': '0 2px 6px rgba(0,0,0,0.1)',
-        'margin': '20px'
-    }),
+    html.Div([
+        html.Div([
+            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+            dbc.ButtonGroup([
+                dbc.Button("Total", id='btn-total1a', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                dbc.Button("Exports", id='btn-export1a', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
+                dbc.Button("Imports", id='btn-import1a', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
+            ], className='w-100')
+        ], className="col-md-6"),
 
-    dcc.Store(id='trade-type-select', data='export'),
-    dcc.Store(id='display-type', data='volume'),
-    dbc.Tooltip("Select the reporting country", target="tooltip-country")
+        html.Div([
+            html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
+            daq.ToggleSwitch(
+                id='toggle-display1a',
+                label='Volume / Percentage Share',
+                value=True,
+                className="mb-2",
+                size=60)
+        ], className="col-md-6 d-flex flex-column align-items-center"),
+    ], className="row mb-4"),
+
+    html.Div(id="tab-warning1a", className="text-danger mb-2 text-center"),
+
+    dcc.Tabs(id="module1a-tabs", value="historical", children=[
+        dcc.Tab(label="Historical", value="historical"),
+        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1a", disabled=True),
+    ]),
+
+    html.Div(id="module1a-tab-content", className="mt-3"),
+
+    html.Div([
+        html.Div(id='country-title1a', style={'display': 'none'}),
+        dcc.Graph(id='bar-chart-sector-country', style={'display': 'none'}),
+        dcc.Graph(id='treemap-sector-country', style={'display': 'none'})
+    ])
 ])
 
-
-# ✅ ADDED: get reference to global app (to register callbacks)
 app = get_app()
 
-# === Helper Functions (unchanged) ===
-def group_top_n(data, group_col, top_n):
-    top = data.nlargest(top_n, 'percentage')
-    others = data[~data[group_col].isin(top[group_col])]
-    if not others.empty:
-        others_agg = pd.DataFrame({
-            group_col: ['Others'],
-            'percentage': [others['percentage'].sum()],
-            'change': [others['change'].mean()],
-            'volume': [others['volume'].sum()],
-            'previous_volume': [others['previous_volume'].sum()]
-        })
-        return pd.concat([top, others_agg], ignore_index=True)
-    return top
-
-def calculate_percentages(data, group_by):
-    grouped = data.groupby(group_by, as_index=False).agg({
-        'volume': 'sum',
-        'previous_volume': 'sum'
-    })
-    total_current = data['volume'].sum()
-    total_previous = data['previous_volume'].sum()
-    grouped['percentage'] = 100 * grouped['volume'] / total_current if total_current else 0
-    grouped['change'] = (
-        100 * (grouped['volume'] / total_current - grouped['previous_volume'] / total_previous)
-        if total_current and total_previous else 0
-    )
-    max_abs_change = grouped['change'].abs().max()
-    dynamic_range = max(1, round(max_abs_change * 5, 2))
-    grouped['change_clipped'] = grouped['change'].clip(lower=-dynamic_range, upper=dynamic_range)
-    grouped['dynamic_range'] = dynamic_range
-    return grouped
-
-# === Callbacks (unchanged) ===
-
 @app.callback(
-    Output('trade-type-select', 'data'),
-    Output('btn-export', 'color'),
-    Output('btn-import', 'color'),
-    [Input('btn-export', 'n_clicks'), Input('btn-import', 'n_clicks')],
+    Output('trade-type-select1a', 'data'),
+    Output('btn-total1a', 'color'),
+    Output('btn-export1a', 'color'),
+    Output('btn-import1a', 'color'),
+    Input('btn-total1a', 'n_clicks'),
+    Input('btn-export1a', 'n_clicks'),
+    Input('btn-import1a', 'n_clicks'),
     prevent_initial_call=True
 )
-def update_trade_type(n_export, n_import):
+def update_trade_type(n_total, n_export, n_import):
     ctx = callback_context.triggered_id
-    if ctx == 'btn-export':
-        return 'export', 'primary', 'secondary'
-    elif ctx == 'btn-import':
-        return 'import', 'secondary', 'primary'
-    return dash.no_update, dash.no_update, dash.no_update
+    if ctx == 'btn-total1a':
+        return 'total', 'primary', 'secondary', 'secondary'
+    elif ctx == 'btn-export1a':
+        return 'export', 'secondary', 'primary', 'secondary'
+    elif ctx == 'btn-import1a':
+        return 'import', 'secondary', 'secondary', 'primary'
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 @app.callback(
-    Output('display-type', 'data'),
-    Output('btn-volume', 'color'),
-    Output('btn-percentage', 'color'),
-    [Input('btn-volume', 'n_clicks'), Input('btn-percentage', 'n_clicks')],
+    Output('display-type1a', 'data'),
+    Input('toggle-display1a', 'value')
+)
+def update_display_type(value):
+    return 'percentage' if value else 'volume'
+
+@app.callback(
+    Output("prediction-tab1a", "disabled"),
+    Input("input-uploaded", "data")
+)
+def toggle_prediction_tab(uploaded):
+    return not uploaded
+
+@app.callback(
+    Output("module1a-tabs", "value"),
+    Input("input-uploaded", "data"),
     prevent_initial_call=True
 )
-def toggle_display_type(n_volume, n_percentage):
-    ctx = callback_context.triggered_id
-    if ctx == 'btn-volume':
-        return 'volume', 'primary', 'secondary'
-    elif ctx == 'btn-percentage':
-        return 'percentage', 'secondary', 'primary'
-    return dash.no_update, dash.no_update, dash.no_update
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
 
-def generate_bar_chart(df, x_col, y_col, previous_col):
-    df_sorted = df.sort_values(y_col, ascending=False)
-    fig = px.bar(df_sorted, x=x_col, y=y_col, text=df_sorted[y_col].apply(lambda x: f"{x:,.0f}"),
-                 labels={x_col: x_col.title(), y_col: y_col.title()}, color_discrete_sequence=['#2c7bb6'])
-    fig.add_bar(x=df_sorted[x_col], y=df_sorted[previous_col], opacity=0.5, name="Previous Period",
-                marker_color='#a6bddb')
-    fig.update_layout(barmode='overlay', font=dict(family='Open Sans, sans-serif'),
-                      legend=dict(x=0.99, y=0.99, xanchor='right', yanchor='top'),
-                      plot_bgcolor='white', paper_bgcolor='white',
-                      margin=dict(t=30, l=10, r=10, b=10))
-    return fig
+def render_tab_content(tab):
+    return html.Div([
+        html.Div(style={'marginTop': '20px'}),
+        html.H5(id='country-title1a', className="text-center mb-2"),
+        dcc.Graph(id='country-treemap1a', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+        dcc.Graph(id='country-bar1a', config={'displayModeBar': False}, style={"backgroundColor": "white"})
+    ])
 
 @app.callback(
-    [Output('sector-treemap', 'figure'),
-     Output('country-treemap', 'figure'),
-     Output('sector-select-alt', 'options'),
-     Output('country-select-alt2', 'options'),
-     Output('sector-title', 'children'),
-     Output('country-title', 'children')],
-    [Input('country-select', 'value'),
-     Input('trade-type-select', 'data'),
-     Input('sector-select-alt', 'value'),
-     Input('country-select-alt2', 'value'),
-     Input('top-n-slider', 'value'),
-     Input('display-type', 'data')]
+    Output('country-treemap1a', 'style'),
+    Output('country-bar1a', 'style'),
+    Input('display-type1a', 'data')
 )
-def update_visualizations(selected_country, trade_type, selected_sector, selected_partner, top_n, display_type):
-    filtered = df[(df['country'] == selected_country) & (df['trade_type'] == trade_type)].copy()
-    sector_options = [{'label': s, 'value': s} for s in sorted(filtered['sector'].unique())]
-    partner_options = [{'label': p, 'value': p} for p in sorted(filtered['partner_country'].unique())]
+def toggle_graph_visibility(display_type):
+    if display_type == 'percentage':
+        return {'display': 'block'}, {'display': 'none'}
+    return {'display': 'none'}, {'display': 'block'}
 
-    sector_view = filtered[filtered['partner_country'] == selected_partner] if selected_partner else filtered
-    sector_agg = calculate_percentages(sector_view, 'sector')
-    sector_agg = group_top_n(sector_agg, 'sector', top_n)
+@app.callback(
+    Output('bar-chart-sector-country', 'figure'),
+    Output('treemap-sector-country', 'figure'),
+    Output('bar-chart-sector-country', 'style'),
+    Output('treemap-sector-country', 'style'),
+    Input('reporter-country-dropdown', 'value'),
+    Input('sector-dropdown', 'value'),
+    Input('trade-type-select1a', 'data'),
+    Input('display-type1a', 'data'),
+    Input('module1a-tabs', 'value')
+)
 
-    country_view = filtered[filtered['sector'] == selected_sector] if selected_sector else filtered
-    country_agg = calculate_percentages(country_view, 'partner_country')
-    country_agg = group_top_n(country_agg, 'partner_country', top_n)
-
-    title_sector = f"Top {top_n} {trade_type.capitalize()}s by Sector"
-    title_country = f"Top {top_n} {trade_type.capitalize()}s by Country"
-    if selected_partner:
-        title_sector = f"Top {top_n} {trade_type.capitalize()}s from {selected_country} to {selected_partner} by Sector"
-    if selected_sector:
-        title_country = f"Top {top_n} {selected_country}'s {trade_type.capitalize()}s in {selected_sector} by Country"
-
-    if display_type == 'volume':
-        fig_sector = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume')
-        fig_country = generate_bar_chart(country_agg, 'partner_country', 'volume', 'previous_volume')
+def update_charts(reporter, sector, trade_type, display_type, tab):
+    if tab == 'prediction':
+        data_source = merged_prediction_df
     else:
-        max_sector_change = sector_agg['change'].abs().max() * 5
-        max_country_change = country_agg['change'].abs().max() * 5
+        data_source = df
 
-        hover_template = '<b>%{label}</b><br>Share: %{customdata[0]}%<br>Change: %{customdata[1]}<br>Volume: %{customdata[2]}<br>Prev Volume: %{customdata[3]}'
+    df_filtered = data_source[data_source['country_a'] == COUNTRY_NAMES[reporter]].copy()
+    sector_code = [k for k, v in SECTOR_LABELS.items() if v == sector][0]
 
-        for df_agg in [sector_agg, country_agg]:
-            df_agg['percentage'] = df_agg['percentage'].round(1)
-            df_agg['change_str'] = df_agg['change'].apply(lambda x: f"{x:+.2f}%")
-            df_agg['volume_fmt'] = df_agg['volume'].apply(lambda x: f"{x:,.0f}")
-            df_agg['previous_volume_fmt'] = df_agg['previous_volume'].apply(lambda x: f"{x:,.0f}")
+    if trade_type == 'export':
+        col = f"{sector_code}_export_A_to_B"
+    elif trade_type == 'import':
+        col = f"{sector_code}_import_A_from_B"
+    else:  # total
+        df_filtered["Total"] = df_filtered[f"{sector_code}_export_A_to_B"] + df_filtered[f"{sector_code}_import_A_from_B"]
+        col = "Total"
 
-        fig_sector = px.treemap(sector_agg, path=['sector'], values='percentage', color='change_clipped',
-                                color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-                                range_color=[-max_sector_change, max_sector_change], color_continuous_midpoint=0,
-                                custom_data=['percentage', 'change_str', 'volume_fmt', 'previous_volume_fmt'])
-        fig_sector.update_traces(hovertemplate=hover_template, texttemplate='<b>%{label}</b><br>%{customdata[0]}% (%{customdata[1]})')
-        fig_sector.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
+    df_filtered = df_filtered[['year', 'country_b', col]].copy()
+    df_filtered = df_filtered.rename(columns={'country_b': 'partner_country', col: 'value'})
+    df_filtered['partner_country'] = df_filtered['partner_country'].map(COUNTRY_LABELS)
 
-        fig_country = px.treemap(country_agg, path=['partner_country'], values='percentage', color='change_clipped',
-                                 color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-                                 range_color=[-max_country_change, max_country_change], color_continuous_midpoint=0,
-                                 custom_data=['percentage', 'change_str', 'volume_fmt', 'previous_volume_fmt'])
-        fig_country.update_traces(hovertemplate=hover_template, texttemplate='<b>%{label}</b><br>%{customdata[0]}% (%{customdata[1]})')
-        fig_country.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
-
-    return fig_sector, fig_country, sector_options, partner_options, title_sector, title_country
-
-def static_bar_graph():
-    sample = df[(df['country'] == 'Canada') & (df['trade_type'] == 'import')].copy()
-
-    grouped = sample.groupby('partner_country', as_index=False).agg({
-        'volume': 'sum',
-        'previous_volume': 'sum'
+    pivot = df_filtered.pivot_table(index="partner_country", columns="year", values="value").reset_index()
+    pivot.columns.name = None
+    pivot = pivot.rename(columns={
+        latest_year: "Current",
+        prev_year: "Previous"
     })
 
-    grouped['volume'] = pd.to_numeric(grouped['volume'], errors='coerce')
-    grouped['previous_volume'] = pd.to_numeric(grouped['previous_volume'], errors='coerce')
-    grouped = grouped.sort_values('volume', ascending=False).head(10)
-
-    fig = generate_bar_chart(grouped, x_col='partner_country', y_col='volume', previous_col='previous_volume')
-    fig.update_layout(
-        xaxis_title=None,
-        title=None,
+    pivot['change'] = 100 * (pivot['Current'] - pivot['Previous']) / pivot['Previous'].replace(0, 1)
+    pivot['hover'] = pivot.apply(
+        lambda row: f"Current ({latest_year}): {row['Current']:.0f}<br>Previous ({prev_year}): {row['Previous']:.0f}<br>Change: {row['change']:+.2f}%",
+        axis=1
     )
-    return fig
 
-## SiDEBar Control
+    fig_bar = px.bar(
+        pivot,
+        x='partner_country',
+        y='Current',
+        text=pivot['Current'].apply(lambda x: f"{x:,.0f}"),
+        hover_data={'hover': True},
+        color_discrete_sequence=['#2c7bb6']
+    )
+    fig_bar.add_bar(x=pivot['partner_country'], y=pivot['Previous'], opacity=0.5, name="Previous Period",
+                    marker_color='#a6bddb')
+    fig_bar.update_traces(hovertemplate=pivot['hover'])
+    fig_bar.update_layout(barmode='overlay', title=f"{reporter}'s {trade_type.capitalize()} Volume in {sector}",
+                          yaxis_title="Trade Volume", xaxis_title="Partner Country",
+                          font=dict(family='Open Sans, sans-serif'),
+                          legend=dict(x=0.99, y=0.99, xanchor='right', yanchor='top'),
+                          plot_bgcolor='white', paper_bgcolor='white',
+                          margin=dict(t=30, l=10, r=10, b=10))
 
-sidebar_controls = html.Div([
-    html.H5("Module 1 Filters", className="text-muted mb-3"),
+    pivot['percentage'] = pivot['Current'] / pivot['Current'].sum() * 100
+    pivot['label'] = pivot['partner_country']
 
-    html.Label([
-        html.B("Country:"),
-        html.I(className="bi bi-info-circle ms-1", id="tooltip-country")
-    ]),
-    dcc.Dropdown(
-        id='country-select',
-        options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
-        value=COUNTRY_LIST[0],
-        placeholder='Select a country',
-        style={"color": "black", "backgroundColor": "white"},
-        searchable=True,
-        className='mb-3'
-    ),
+    fig_treemap = px.treemap(
+        pivot,
+        path=['label'],
+        values='Current',
+        color='change',
+        color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
+        range_color=[-50, 50],
+        custom_data=['percentage', 'change']
+    )
+    fig_treemap.update_traces(
+        hovertemplate=(
+        "<b>%{label}</b><br>" +
+        "Current Share: %{customdata[0]:.1f}%<br>" +
+        "Previous Share: %{customdata[1]:.1f}%<br>" +
+        "Change in Share: %{customdata[2]:+.1f}%<extra></extra>"
+    )
+)
+    fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
 
-    html.Label("Trade Type:"),
-    dbc.ButtonGroup([
-        dbc.Button("Exports", id='btn-export', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm'),
-        dbc.Button("Imports", id='btn-import', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm')
-    ], className='w-100 mb-3'),
+    if display_type == 'percentage':
+        return fig_bar, fig_treemap, {'display': 'none'}, {'display': 'block'}
+    else:
+        return fig_bar, fig_treemap, {'display': 'block'}, {'display': 'none'}
 
-    html.Label("Display:"),
-    dbc.ButtonGroup([
-        dbc.Button("Volume", id='btn-volume', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm'),
-        dbc.Button("Percentage", id='btn-percentage', n_clicks=0, style={"color": "black", "backgroundColor": "white"}, outline=True, size='sm')
-    ], className='w-100 mb-3'),
 
-    html.Label("Partner Country:"),
-    dcc.Dropdown(id='country-select-alt2', style={"color": "black", "backgroundColor": "white"}, searchable=True, className='mb-3'),
+# === PREDICTION DATA PREPARATION ===
+new_df = pd.read_csv('sample_2026.csv')
 
-    html.Label("Sector:"),
-    dcc.Dropdown(id='sector-select-alt',style={"color": "black", "backgroundColor": "white"}, searchable=True, className='mb-3'),
+# Get only latest year from historical data
+historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
 
-    html.Label("View Top N:"),
-    dcc.Slider(id='top-n-slider', min=1, max=MAX_TOP_N, step=1, value=10,
-               tooltip={"placement": "bottom", "always_visible": True})
-])
+new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+new_df.drop(columns=['scenario'], inplace=True)
+
+# Step 2: Ensure column alignment
+new_df = new_df[historical_latest.columns]
+
+# Step 3: Ensure all numeric columns are converted
+for col in new_df.columns:
+    if col not in ['country_a', 'country_b', 'year']:
+        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+
+for col in historical_latest.columns:
+    if col not in ['country_a', 'country_b', 'year']:
+        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+
+# Merge the two datasets
+merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+merged_prediction_df = merged_prediction_df.round(2)
+
+sidebar_controls = html.Div([])
