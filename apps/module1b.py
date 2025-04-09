@@ -772,6 +772,7 @@ def calculate_sector_shares(df_view, sector_code, trade_type):
     return df_view
 
 layout = html.Div([
+    dcc.Store(id="selected-sectors-multi7abc", data=SECTOR_CODES[:2]),
     # Stores and Controls
     dcc.Store(id="selected-sector7abc", data=SECTOR_CODES[0]),
     dcc.Store(id="trade-type-select7abc", data='total'),
@@ -804,18 +805,6 @@ layout = html.Div([
         ], className="col-md-6")
     ], className="row mb-3"),
 
-    html.Div([
-        html.Label("Select Sector", className="form-label fw-semibold mb-2"),
-        html.Div([
-            html.Button(
-                SECTOR_LABELS[code],
-                id={"type": "sector-btn_module1c", "index": code},
-                n_clicks_timestamp=0,
-                className="btn me-2 mb-2",
-                style={"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code == SECTOR_CODES[0] else {}
-            ) for code in SECTOR_CODES
-        ], className="d-flex flex-wrap")
-    ], className="mb-3"),
 
     html.Div([
         html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
@@ -843,11 +832,13 @@ layout = html.Div([
     ]),
 
     dcc.Tabs(id="module1c-subtabs7abc", value="historical-bar7abc", className="mb-3"),
+    
+    html.Div(id="sector-button-container7abc"),
 
     html.Div(id="module1c-tab-content7abc", className="mt-3", children=[
         html.Div(id="module1c-graph-container7abc")
-])
-])
+    ])
+  ])
 
 @app.callback(
     Output("module1c-graph-container7abc", "children"),
@@ -855,10 +846,11 @@ layout = html.Div([
     Input("country-select7abc", "value"),
     Input("country-select-alt27abc", "value"),
     Input("selected-sector7abc", "data"),
+    Input("selected-sectors-multi7abc", "data"),
     Input("trade-type-select7abc", "data"),
     Input("display-mode7abc", "data")
 )
-def update_graph_content(subtab, country, partner, sector_code, trade_type, display_mode):
+def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_type, display_mode):
     if not country or not partner:
         return dash.no_update
 
@@ -870,16 +862,9 @@ def update_graph_content(subtab, country, partner, sector_code, trade_type, disp
         (df_raw['year'] >= 2014) & (df_raw['year'] <= 2023)
     ].copy()
 
-    df_view = calculate_sector_shares(df_view, sector_code, trade_type)
-    df_view.sort_values("year", inplace=True)
-
-    df_view_line = df_view.copy()
-    df_view = df_view[df_view["year"] >= 2015].copy()
-
-    df_view = calculate_sector_shares(df_view, sector_code, trade_type)
-    df_view.sort_values("year", inplace=True)
-
     if subtab == "historical-bar7abc":
+        df_view = calculate_sector_shares(df_view, single_sector, trade_type)
+        df_view = df_view[df_view["year"] >= 2015]
         y_col = "value" if display_mode == "volume" else "percentage"
         y_title = "Trade Volume" if display_mode == "volume" else "Percentage Share"
 
@@ -887,8 +872,8 @@ def update_graph_content(subtab, country, partner, sector_code, trade_type, disp
             df_view, x="year", y=y_col,
             text=df_view[y_col].apply(lambda x: f"{x:,.2f}" if display_mode == "percentage" else f"{x:,.0f}"),
             hover_data={"percentage": ':.2f'},
-            labels={y_col: f"{SECTOR_LABELS[sector_code]}"},
-            title=f"{SECTOR_LABELS[sector_code]} {trade_type.capitalize()} from {country} to {partner} (2015–2023)",
+            labels={y_col: f"{SECTOR_LABELS[single_sector]}"},
+            title=f"{SECTOR_LABELS[single_sector]} {trade_type.capitalize()} from {country} to {partner} (2015–2023)",
             color_discrete_sequence=["#2c7bb6"]
         )
         fig.update_traces(textposition="outside")
@@ -900,33 +885,81 @@ def update_graph_content(subtab, country, partner, sector_code, trade_type, disp
         return dcc.Graph(figure=fig)
 
     elif subtab == "historical-line7abc":
-        if display_mode == "percentage":
-            df_view_line["change"] = df_view_line["percentage"].diff()
-            y_title = "% Point Change in Share"
-            y_label = "% Point Change in Sector Share"
-        else:
-            df_view_line["change"] = df_view_line["value"].diff()
-            y_title = "Change in Volume"
-            y_label = "Change in Sector Volume"
-            y_title = "% Change in Volume"
-            y_label = "% Change in Sector Volume"
+        lines = []
+        for code in multi_sectors:
+            temp = calculate_sector_shares(df_view.copy(), code, trade_type)
+            temp = temp.sort_values("year")
+            if display_mode == "percentage":
+                temp["change"] = temp["percentage"].diff()
+                y_label = "% Point Change in Sector Share"
+            else:
+                temp["change"] = temp["value"].diff()
+                y_label = "Change in Sector Volume"
+            temp = temp[temp["year"] >= 2015].copy()
+            temp["sector"] = SECTOR_LABELS[code]
+            lines.append(temp)
 
+        if not lines:
+            return html.Div("Select at least one sector to display the line graph.", className="text-muted text-center")
+
+        df_combined = pd.concat(lines)
         fig = px.line(
-        df_view_line[df_view_line["year"] >= 2015],
+        df_combined,
             x="year",
             y="change",
+            color="sector",
             markers=True,
             labels={"change": y_label},
-            title=f"Year-on-Year {y_title} in {SECTOR_LABELS[sector_code]} ({trade_type.capitalize()}) from {country} to {partner}"
+            title=f"Year-on-Year Change by Sector ({trade_type.capitalize()}) from {country} to {partner}"
         )
         fig.update_layout(
-            yaxis_title=y_title,
+            yaxis_title=y_label,
             xaxis_title="Year",
             plot_bgcolor="white",
             paper_bgcolor="white",
             margin=dict(t=30, l=10, r=10, b=10)
         )
+        fig.update_traces(marker=dict(size=12),
+                  selector=dict(mode='markers'))
+        
         return dcc.Graph(figure=fig)
+
+    return dash.no_update
+
+from dash.exceptions import PreventUpdate
+
+@app.callback(
+    Output("sector-button-container7abc", "children"),
+    Input("module1c-subtabs7abc", "value")
+)
+def render_sector_buttons(subtab):
+    if subtab == "historical-bar7abc":
+        return html.Div([
+            html.Label("Select Sector", className="form-label fw-semibold mb-2"),
+            html.Div([
+                html.Button(
+                    SECTOR_LABELS[code],
+                    id={"type": "sector-btn_module1c", "index": code},
+                    n_clicks_timestamp=0,
+                    className="btn me-2 mb-2",
+                    style={"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code == SECTOR_CODES[0] else {}
+                ) for code in SECTOR_CODES
+            ], className="d-flex flex-wrap")
+        ])
+    elif subtab == "historical-line7abc":
+        return html.Div([
+            html.Label("Select Sectors", className="form-label fw-semibold mb-2"),
+            html.Div([
+                html.Button(
+                    SECTOR_LABELS[code],
+                    id={"type": "sector-btn-multi_module1c", "index": code},
+                    n_clicks=0,
+                    className="btn me-2 mb-2"
+                ) for code in SECTOR_CODES
+            ], className="d-flex flex-wrap")
+        ])
+
+    
 
     return dash.no_update
 
@@ -946,15 +979,43 @@ def update_partner_dropdown(selected_country):
 @app.callback(
     Output("selected-sector7abc", "data"),
     Output({"type": "sector-btn_module1c", "index": ALL}, "style"),
-    Input({"type": "sector-btn_module1c", "index": ALL}, "n_clicks_timestamp")
+    Input({"type": "sector-btn_module1c", "index": ALL}, "n_clicks_timestamp"),
+    State("module1c-subtabs7abc", "value")
 )
-def update_selected_sector(n_clicks):
+def update_selected_sector(n_clicks, subtab):
+    if subtab != "historical-bar7abc":
+        raise PreventUpdate
     if not any(n_clicks):
         styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(SECTOR_CODES))]
         return SECTOR_CODES[0], styles
     selected_idx = n_clicks.index(max(n_clicks))
     styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(SECTOR_CODES))]
     return SECTOR_CODES[selected_idx], styles
+
+
+@app.callback(
+    Output("selected-sectors-multi7abc", "data"),
+    Output({"type": "sector-btn-multi_module1c", "index": ALL}, "style"),
+    Input({"type": "sector-btn-multi_module1c", "index": ALL}, "n_clicks"),
+    State("selected-sectors-multi7abc", "data")
+)
+def toggle_multi_sector(n_clicks_list, selected_sectors):
+    ctx = callback_context.triggered_id
+    if not ctx:
+        raise PreventUpdate
+
+    code = ctx["index"]
+    if code in selected_sectors:
+        selected_sectors.remove(code)
+    else:
+        selected_sectors.append(code)
+
+    styles = [
+        {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_sectors else {}
+        for code in SECTOR_CODES
+    ]
+    return selected_sectors, styles
+
 
 @app.callback(
     Output("trade-type-select7abc", "data"),
@@ -1010,4 +1071,10 @@ def toggle_subtab_visibility(main_tab):
             dcc.Tab(label="Bar Chart", value="prediction-bar7abc", disabled=False),
             dcc.Tab(label="Line Chart", value="prediction-line7abc", disabled=False)
         ], "prediction-bar7abc"
+
+
+
+
+
+
 
