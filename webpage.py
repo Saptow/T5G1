@@ -67,17 +67,17 @@ navbar = dbc.Navbar(
                 dbc.DropdownMenu(label="Sector Statistics", children=[
                     dbc.DropdownMenuItem("top N partner country for sector", href="/module1a"),
                     dbc.DropdownMenuItem("sector share change over time", href="/module1b"),
-                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
-                dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3",style={"fontSize": "1.8rem"}, active="exact")),
+                ], nav=True, in_navbar=True, className="mx-3"),
+                dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3", active="exact")),
                 dbc.DropdownMenu(label="Country Statistics", children=[
                     dbc.DropdownMenuItem("top N partner country for sector", href="/module3a"),
                     dbc.DropdownMenuItem("sector share change over time", href="/module3b"),
-                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
+                ], nav=True, in_navbar=True, className="mx-3"),
                 dbc.DropdownMenu(label="Geopolitical Trade Statistics", children=[
                     dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
                     dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
-                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
-                dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3", style={"fontSize": "1.8rem"}, active="exact")),
+                ], nav=True, in_navbar=True, className="mx-3"),
+                dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3", active="exact")),
             ], className="ms-auto", navbar=True),
             id="navbar-collapse",
             navbar=True
