@@ -201,27 +201,4 @@ print("Prediction year:", new_df['year'].unique())
 merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
 #merged_prediction_df.to_csv('testonly.csv' ,index = False)
 
-
-new_df = pd.read_csv('sample_2026.csv')
-
-# Get only latest year from historical data
-historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
-
-new_df = new_df[new_df['scenario'] == 'postshock'].copy()
-new_df.drop(columns=['scenario'], inplace=True)
-
-# Step 2: Ensure column alignment
-new_df = new_df[historical_latest.columns]
-
-# Step 3: Ensure all numeric columns are converted
-for col in new_df.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
-
-for col in historical_latest.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
-
-# Merge the two datasets
-merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
 print(merged_prediction_df.dtypes)
