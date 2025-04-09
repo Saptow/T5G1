@@ -73,7 +73,7 @@ card_titles = [
     "Total Trade Volume",
     "Best Performing Country",
     "Best Performing Sector",
-    "Avg Geopolitical Distance"
+    "Average Geopolitical Distance"
 ]
 
 card_values = [
@@ -94,7 +94,7 @@ layout = html.Div([
                     html.Div(card_values[0], style={"fontSize": "2.5rem", "fontWeight": "bold", "color": "white"}),
                     html.Div("Year 2023", style={"fontSize": "0.9rem", "color": "white"})
                 ], className="d-flex flex-column justify-content-center align-items-center h-100")
-            ], className="text-center", style={"height": "250px", "backgroundColor": "#4A4A4A", "borderRadius": "12px"})
+            ], className="text-center", style={"height": "250px", "backgroundColor": "#2E4053", "borderRadius": "12px"})
         ], id="go-to-module2", style={"cursor": "pointer"}), width=3),
 
         dbc.Col(html.Div([
@@ -104,7 +104,7 @@ layout = html.Div([
                     html.Div(card_values[1], style={"fontSize": "2.5rem", "fontWeight": "bold", "color": "white"}),
                     html.Div("Year 2023", style={"fontSize": "0.9rem", "color": "white"})
                 ], className="d-flex flex-column justify-content-center align-items-center h-100")
-            ], className="text-center", style={"height": "250px", "backgroundColor": "#5C5C5C", "borderRadius": "12px"})
+            ], className="text-center", style={"height": "250px", "backgroundColor": "#5D6D7E", "borderRadius": "12px"})
         ], id="go-to-module1a", style={"cursor": "pointer"}), width=3),
 
         dbc.Col(html.Div([
@@ -114,7 +114,7 @@ layout = html.Div([
                     html.Div(card_values[2], style={"fontSize": "2.5rem", "fontWeight": "bold", "color": "white"}),
                     html.Div("Year 2023", style={"fontSize": "0.9rem", "color": "white"})
                 ], className="d-flex flex-column justify-content-center align-items-center h-100")
-            ], className="text-center", style={"height": "250px", "backgroundColor": "#4A4A4A", "borderRadius": "12px"})
+            ], className="text-center", style={"height": "250px", "backgroundColor": "#2E4053", "borderRadius": "12px"})
         ], id="go-to-module3a", style={"cursor": "pointer"}), width=3),
 
         dbc.Col(html.Div([
@@ -124,7 +124,7 @@ layout = html.Div([
                     html.Div(card_values[3], style={"fontSize": "2.5rem", "fontWeight": "bold", "color": "white"}),
                     html.Div("Year 2023", style={"fontSize": "0.9rem", "color": "white"})
                 ], className="d-flex flex-column justify-content-center align-items-center h-100")
-            ], className="text-center", style={"height": "250px", "backgroundColor": "#5C5C5C", "borderRadius": "12px"})
+            ], className="text-center", style={"height": "250px", "backgroundColor": "#5D6D7E", "borderRadius": "12px"})
         ], id="go-to-module4a", style={"cursor": "pointer"}), width=3),
     ], className="mb-3 g-3 px-3"),
 
