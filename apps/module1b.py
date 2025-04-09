@@ -404,7 +404,8 @@ from dash.dependencies import ALL
 
 sidebar_controls = html.Div([])
 
-# # Comment Out
+# # comment in 
+
 # import pandas as pd
 # import plotly.express as px
 # from dash import dcc, html, Input, Output, State, callback_context, get_app
@@ -486,13 +487,13 @@ sidebar_controls = html.Div([])
 #     return df_view
 
 # layout = html.Div([
-    
-#     html.H2("Sector Trade Trends Over Time", className="text-center mb-4"),
-
-#     #dcc.Store(id="input-uploaded7abc"),
+#     dcc.Store(id="selected-sectors-multi7abc", data=SECTOR_CODES[:2]),
+#     # Stores and Controls
 #     dcc.Store(id="selected-sector7abc", data=SECTOR_CODES[0]),
 #     dcc.Store(id="trade-type-select7abc", data='total'),
 #     dcc.Store(id="display-mode7abc", data='volume'),
+
+#     html.H2("Sector Trade Trends Over Time", className="text-center mb-4"),
 
 #     html.Div([
 #         html.Div([
@@ -519,18 +520,6 @@ sidebar_controls = html.Div([])
 #         ], className="col-md-6")
 #     ], className="row mb-3"),
 
-#     html.Div([
-#         html.Label("Select Sector", className="form-label fw-semibold mb-2"),
-#         html.Div([
-#             html.Button(
-#                 SECTOR_LABELS[code],
-#                 id={"type": "sector-btn_module1c", "index": code},
-#                 n_clicks_timestamp=0,
-#                 className="btn me-2 mb-2",
-#                 style={"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code == SECTOR_CODES[0] else {}
-#             ) for code in SECTOR_CODES
-#         ], className="d-flex flex-wrap")
-#     ], className="mb-3"),
 
 #     html.Div([
 #         html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
@@ -551,17 +540,143 @@ sidebar_controls = html.Div([])
 #             size=60
 #         )
 #     ], className="mb-4 d-flex flex-column align-items-center"),
-
+  
 #     dcc.Tabs(id="module1c-tabs7abc", value="historical", className="mb-2", children=[
 #         dcc.Tab(label="Historical", value="historical"),
 #         dcc.Tab(label="Prediction", value="prediction")
 #     ]),
+
 #     dcc.Tabs(id="module1c-subtabs7abc", value="historical-bar7abc", className="mb-3"),
+    
+#     html.Div(id="sector-button-container7abc"),
 
 #     html.Div(id="module1c-tab-content7abc", className="mt-3", children=[
 #         html.Div(id="module1c-graph-container7abc")
 #     ])
-# ])
+#   ])
+
+# @app.callback(
+#     Output("module1c-graph-container7abc", "children"),
+#     Input("module1c-subtabs7abc", "value"),
+#     Input("country-select7abc", "value"),
+#     Input("country-select-alt27abc", "value"),
+#     Input("selected-sector7abc", "data"),
+#     Input("selected-sectors-multi7abc", "data"),
+#     Input("trade-type-select7abc", "data"),
+#     Input("display-mode7abc", "data")
+# )
+# def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_type, display_mode):
+#     if not country or not partner:
+#         return dash.no_update
+
+#     country_id = COUNTRY_NAMES[country]
+#     partner_id = COUNTRY_NAMES[partner]
+
+#     df_view = df_raw[
+#         (df_raw['country_a'] == country_id) & (df_raw['country_b'] == partner_id) &
+#         (df_raw['year'] >= 2014) & (df_raw['year'] <= 2023)
+#     ].copy()
+
+#     if subtab == "historical-bar7abc":
+#         df_view = calculate_sector_shares(df_view, single_sector, trade_type)
+#         df_view = df_view[df_view["year"] >= 2015]
+#         y_col = "value" if display_mode == "volume" else "percentage"
+#         y_title = "Trade Volume" if display_mode == "volume" else "Percentage Share"
+
+#         fig = px.bar(
+#             df_view, x="year", y=y_col,
+#             text=df_view[y_col].apply(lambda x: f"{x:,.2f}" if display_mode == "percentage" else f"{x:,.0f}"),
+#             hover_data={"percentage": ':.2f'},
+#             labels={y_col: f"{SECTOR_LABELS[single_sector]}"},
+#             title=f"{SECTOR_LABELS[single_sector]} {trade_type.capitalize()} from {country} to {partner} (2015–2023)",
+#             color_discrete_sequence=["#2c7bb6"]
+#         )
+#         fig.update_traces(textposition="outside")
+#         fig.update_layout(
+#             yaxis_title=y_title, xaxis_title="Year",
+#             plot_bgcolor="white", paper_bgcolor="white",
+#             margin=dict(t=30, l=10, r=10, b=10)
+#         )
+#         return dcc.Graph(figure=fig)
+
+#     elif subtab == "historical-line7abc":
+#         lines = []
+#         for code in multi_sectors:
+#             temp = calculate_sector_shares(df_view.copy(), code, trade_type)
+#             temp = temp.sort_values("year")
+#             if display_mode == "percentage":
+#                 temp["change"] = temp["percentage"].diff()
+#                 y_label = "% Point Change in Sector Share"
+#             else:
+#                 temp["change"] = temp["value"].diff()
+#                 y_label = "Change in Sector Volume"
+#             temp = temp[temp["year"] >= 2015].copy()
+#             temp["sector"] = SECTOR_LABELS[code]
+#             lines.append(temp)
+
+#         if not lines:
+#             return html.Div("Select at least one sector to display the line graph.", className="text-muted text-center")
+
+#         df_combined = pd.concat(lines)
+#         fig = px.line(
+#         df_combined,
+#             x="year",
+#             y="change",
+#             color="sector",
+#             markers=True,
+#             labels={"change": y_label},
+#             title=f"Year-on-Year Change by Sector ({trade_type.capitalize()}) from {country} to {partner}"
+#         )
+#         fig.update_layout(
+#             yaxis_title=y_label,
+#             xaxis_title="Year",
+#             plot_bgcolor="white",
+#             paper_bgcolor="white",
+#             margin=dict(t=30, l=10, r=10, b=10)
+#         )
+#         fig.update_traces(marker=dict(size=12),
+#                   selector=dict(mode='markers'))
+        
+#         return dcc.Graph(figure=fig)
+
+#     return dash.no_update
+
+# from dash.exceptions import PreventUpdate
+
+# @app.callback(
+#     Output("sector-button-container7abc", "children"),
+#     Input("module1c-subtabs7abc", "value")
+# )
+# def render_sector_buttons(subtab):
+#     if subtab == "historical-bar7abc":
+#         return html.Div([
+#             html.Label("Select Sector", className="form-label fw-semibold mb-2"),
+#             html.Div([
+#                 html.Button(
+#                     SECTOR_LABELS[code],
+#                     id={"type": "sector-btn_module1c", "index": code},
+#                     n_clicks_timestamp=0,
+#                     className="btn me-2 mb-2",
+#                     style={"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code == SECTOR_CODES[0] else {}
+#                 ) for code in SECTOR_CODES
+#             ], className="d-flex flex-wrap")
+#         ])
+#     elif subtab == "historical-line7abc":
+#         return html.Div([
+#             html.Label("Select Sectors", className="form-label fw-semibold mb-2"),
+#             html.Div([
+#                 html.Button(
+#                     SECTOR_LABELS[code],
+#                     id={"type": "sector-btn-multi_module1c", "index": code},
+#                     n_clicks=0,
+#                     className="btn me-2 mb-2"
+#                 ) for code in SECTOR_CODES
+#             ], className="d-flex flex-wrap")
+#         ])
+
+    
+
+#     return dash.no_update
 
 # @app.callback(
 #     Output("country-select-alt27abc", "options"),
@@ -579,15 +694,43 @@ sidebar_controls = html.Div([])
 # @app.callback(
 #     Output("selected-sector7abc", "data"),
 #     Output({"type": "sector-btn_module1c", "index": ALL}, "style"),
-#     Input({"type": "sector-btn_module1c", "index": ALL}, "n_clicks_timestamp")
+#     Input({"type": "sector-btn_module1c", "index": ALL}, "n_clicks_timestamp"),
+#     State("module1c-subtabs7abc", "value")
 # )
-# def update_selected_sector(n_clicks):
+# def update_selected_sector(n_clicks, subtab):
+#     if subtab != "historical-bar7abc":
+#         return dash.no_update, []
 #     if not any(n_clicks):
 #         styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(SECTOR_CODES))]
 #         return SECTOR_CODES[0], styles
 #     selected_idx = n_clicks.index(max(n_clicks))
 #     styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(SECTOR_CODES))]
 #     return SECTOR_CODES[selected_idx], styles
+
+
+# @app.callback(
+#     Output("selected-sectors-multi7abc", "data"),
+#     Output({"type": "sector-btn-multi_module1c", "index": ALL}, "style"),
+#     Input({"type": "sector-btn-multi_module1c", "index": ALL}, "n_clicks"),
+#     State("selected-sectors-multi7abc", "data")
+# )
+# def toggle_multi_sector(n_clicks_list, selected_sectors):
+#     ctx = callback_context.triggered_id
+#     if not ctx:
+#         raise PreventUpdate
+
+#     code = ctx["index"]
+#     if code in selected_sectors:
+#         selected_sectors.remove(code)
+#     else:
+#         selected_sectors.append(code)
+
+#     styles = [
+#         {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_sectors else {}
+#         for code in SECTOR_CODES
+#     ]
+#     return selected_sectors, styles
+
 
 # @app.callback(
 #     Output("trade-type-select7abc", "data"),
@@ -644,53 +787,7 @@ sidebar_controls = html.Div([])
 #             dcc.Tab(label="Line Chart", value="prediction-line7abc", disabled=False)
 #         ], "prediction-bar7abc"
 
-# @app.callback(
-#     Output("module1c-graph-container7abc", "children"),
-#     Input("module1c-subtabs7abc", "value"),
-#     Input("country-select7abc", "value"),
-#     Input("country-select-alt27abc", "value"),
-#     Input("selected-sector7abc", "data"),
-#     Input("trade-type-select7abc", "data"),
-#     Input("display-mode7abc", "data")
-# )
-# def update_graph_display(active_subtab, country, partner, sector_code, trade_type, display_mode):
-#     if active_subtab != "historical-bar7abc":
-#         return dash.no_update
-
-#     if not country or not partner or not sector_code:
-#         return dash.no_update
-
-#     country_id = COUNTRY_NAMES[country]
-#     partner_id = COUNTRY_NAMES[partner]
-
-#     df_view = df_raw[
-#         (df_raw['country_a'] == country_id) & (df_raw['country_b'] == partner_id) &
-#         (df_raw['year'] >= 2015) & (df_raw['year'] <= 2023)
-#     ].copy()
-
-#     df_view = calculate_sector_shares(df_view, sector_code, trade_type)
-
-#     y_col = "value" if display_mode == "volume" else "percentage"
-#     y_title = "Trade Value" if display_mode == "volume" else "Percentage Share"
-
-#     fig = px.bar(
-#         df_view, x="year", y=y_col,
-#         text=df_view[y_col].apply(lambda x: f"{x:,.2f}" if display_mode == "percentage" else f"{x:,.0f}"),
-#         hover_data={"percentage": ':.2f'},
-#         labels={y_col: f"{SECTOR_LABELS[sector_code]}"},
-#         title=f"{SECTOR_LABELS[sector_code]} {trade_type.capitalize()} from {country} to {partner} (2015–2023)",
-#         color_discrete_sequence=["#2c7bb6"]
-#     )
-#     fig.update_traces(textposition="outside")
-#     fig.update_layout(
-#         yaxis_title=y_title, xaxis_title="Year",
-#         plot_bgcolor="white", paper_bgcolor="white",
-#         margin=dict(t=30, l=10, r=10, b=10)
-#     )
-#     return dcc.Graph(figure=fig)
-    
-# # End of Comment Out
-
+# # comment out
 import pandas as pd
 import plotly.express as px
 from dash import dcc, html, Input, Output, State, callback_context, get_app
@@ -701,6 +798,14 @@ import dash_daq as daq
 
 # === Load and Prepare Data ===
 df_raw = pd.read_csv("data/final/historical_data.csv")
+
+# === Load and Prepare Prediction Data ===
+prediction_df = pd.read_csv("sample_2026.csv")
+prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+
+# Merge historical and prediction data
+df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
 df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
 
 SECTOR_LABELS = {
@@ -828,8 +933,9 @@ layout = html.Div([
   
     dcc.Tabs(id="module1c-tabs7abc", value="historical", className="mb-2", children=[
         dcc.Tab(label="Historical", value="historical"),
-        dcc.Tab(label="Prediction", value="prediction")
+        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab7abc", disabled=True)
     ]),
+    
 
     dcc.Tabs(id="module1c-subtabs7abc", value="historical-bar7abc", className="mb-3"),
     
@@ -857,14 +963,30 @@ def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_t
     country_id = COUNTRY_NAMES[country]
     partner_id = COUNTRY_NAMES[partner]
 
-    df_view = df_raw[
-        (df_raw['country_a'] == country_id) & (df_raw['country_b'] == partner_id) &
-        (df_raw['year'] >= 2014) & (df_raw['year'] <= 2023)
-    ].copy()
+    if subtab.startswith("historical"):
+        df_view_all = df_raw[
+            (df_raw['country_a'] == country_id) & (df_raw['country_b'] == partner_id)
+        ].copy()
+    else:
+        df_view_all = df_combined_all[
+            (df_combined_all['country_a'] == country_id) & (df_combined_all['country_b'] == partner_id)
+        ].copy()
 
-    if subtab == "historical-bar7abc":
+    latest_year = df_view_all['year'].max()
+    prev_year = df_view_all[df_view_all['year'] < latest_year]['year'].max()
+
+    df_view = df_view_all.copy()
+
+    if subtab.startswith("prediction"):
+        df_view = df_view[~df_view["year"].isin([2024, 2025])]
+    elif subtab.startswith("historical"):
+        df_view = df_view[df_view["year"] <= 2023]
+
+    if subtab in ["historical-bar7abc", "prediction-bar7abc"]:
         df_view = calculate_sector_shares(df_view, single_sector, trade_type)
         df_view = df_view[df_view["year"] >= 2015]
+        if subtab.startswith("prediction"):
+            df_view = df_view[~df_view["year"].isin([2024, 2025])]
         y_col = "value" if display_mode == "volume" else "percentage"
         y_title = "Trade Volume" if display_mode == "volume" else "Percentage Share"
 
@@ -873,18 +995,25 @@ def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_t
             text=df_view[y_col].apply(lambda x: f"{x:,.2f}" if display_mode == "percentage" else f"{x:,.0f}"),
             hover_data={"percentage": ':.2f'},
             labels={y_col: f"{SECTOR_LABELS[single_sector]}"},
-            title=f"{SECTOR_LABELS[single_sector]} {trade_type.capitalize()} from {country} to {partner} (2015–2023)",
-            color_discrete_sequence=["#2c7bb6"]
+            title=f"{SECTOR_LABELS[single_sector]} {trade_type.capitalize()} from {country} to {partner} ({df_view['year'].min()}–{df_view['year'].max()})",
+            color=df_view['year'].apply(lambda y: '#fdae61' if subtab.startswith("prediction") and y == latest_year else '#2c7bb6')
         )
         fig.update_traces(textposition="outside")
+        if subtab.startswith("prediction"):
+            fig.update_traces(
+                line=dict(dash="dot", color="#fdae61"),
+                selector=dict(mode="lines+markers")
+            )
+
         fig.update_layout(
+            showlegend=False,
             yaxis_title=y_title, xaxis_title="Year",
             plot_bgcolor="white", paper_bgcolor="white",
             margin=dict(t=30, l=10, r=10, b=10)
         )
         return dcc.Graph(figure=fig)
 
-    elif subtab == "historical-line7abc":
+    elif subtab in ["historical-line7abc", "prediction-line7abc"]:
         lines = []
         for code in multi_sectors:
             temp = calculate_sector_shares(df_view.copy(), code, trade_type)
@@ -905,7 +1034,7 @@ def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_t
         df_combined = pd.concat(lines)
         fig = px.line(
         df_combined,
-            x="year",
+        x="year",
             y="change",
             color="sector",
             markers=True,
@@ -921,10 +1050,23 @@ def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_t
         )
         fig.update_traces(marker=dict(size=12),
                   selector=dict(mode='markers'))
-        
+        if subtab == "prediction-line7abc":
+            for sector in df_combined["sector"].unique():
+                df_sector = df_combined[df_combined["sector"] == sector].sort_values("year")
+                if 2023 in df_sector["year"].values and 2026 in df_sector["year"].values:
+                    fig.add_scatter(
+                        x=[2023, 2026],
+                        y=df_sector[df_sector["year"].isin([2023, 2026])]["change"],
+                        mode="lines",
+                        line=dict(dash="dot", color="#fdae61"),
+                        showlegend=False,
+                        name=f"{sector} Projection"
+            )
+
         return dcc.Graph(figure=fig)
 
     return dash.no_update
+
 
 from dash.exceptions import PreventUpdate
 
@@ -933,7 +1075,7 @@ from dash.exceptions import PreventUpdate
     Input("module1c-subtabs7abc", "value")
 )
 def render_sector_buttons(subtab):
-    if subtab == "historical-bar7abc":
+    if subtab in ["historical-bar7abc", "prediction-bar7abc"]:
         return html.Div([
             html.Label("Select Sector", className="form-label fw-semibold mb-2"),
             html.Div([
@@ -946,7 +1088,7 @@ def render_sector_buttons(subtab):
                 ) for code in SECTOR_CODES
             ], className="d-flex flex-wrap")
         ])
-    elif subtab == "historical-line7abc":
+    elif subtab in ["historical-line7abc", "prediction-line7abc"]:
         return html.Div([
             html.Label("Select Sectors", className="form-label fw-semibold mb-2"),
             html.Div([
@@ -983,15 +1125,14 @@ def update_partner_dropdown(selected_country):
     State("module1c-subtabs7abc", "value")
 )
 def update_selected_sector(n_clicks, subtab):
-    if subtab != "historical-bar7abc":
-        raise PreventUpdate
+    if subtab not in ["historical-bar7abc", "prediction-bar7abc"]:
+        return dash.no_update, [{} for _ in SECTOR_CODES]
     if not any(n_clicks):
         styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(SECTOR_CODES))]
         return SECTOR_CODES[0], styles
     selected_idx = n_clicks.index(max(n_clicks))
     styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(SECTOR_CODES))]
     return SECTOR_CODES[selected_idx], styles
-
 
 @app.callback(
     Output("selected-sectors-multi7abc", "data"),
@@ -1071,6 +1212,18 @@ def toggle_subtab_visibility(main_tab):
             dcc.Tab(label="Bar Chart", value="prediction-bar7abc", disabled=False),
             dcc.Tab(label="Line Chart", value="prediction-line7abc", disabled=False)
         ], "prediction-bar7abc"
+
+@app.callback(
+    Output("module1c-tabs7abc", "value"),
+    Input("input-uploaded", "data"),
+    prevent_initial_call=True
+)
+def switch_to_prediction_tab(uploaded):
+    if uploaded:
+        return "prediction"
+    return dash.no_update
+
+
 
 
 
