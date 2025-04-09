@@ -8,35 +8,33 @@ body {
     padding: 120px;
 }
 
-/* === Sidebar Styling === */
+/* === Navbar Styling === */
 .navbar {
     background-color: #2C3E50; 
-    height: 100px;
+    height: 125px;  /* Match Python */
     position: fixed;
+    padding: 0.5rem 1rem;
 }
 
-/* Adjust Navbar Brand (title) */
+/* Navbar Brand (left title) */
 .navbar-brand {
     font-weight: 600;
-    font-size: 1.6rem;
+    font-size: 3rem;
     color: white !important;
+    margin-left: 2rem;
 }
 
-/* Nav item links (e.g., Home, Module X) */
-.navbar .nav-link {
+/* Nav item links and dropdown labels */
+.navbar .nav-link,
+.navbar .dropdown-toggle,
+.navbar .dropdown-menu .dropdown-item {
     color: white !important;
     font-weight: 500;
-    font-size: 1rem;
+    font-size: 1.0rem;
     transition: background-color 0.3s ease;
 }
 
-/* Dropdown label */
-.navbar .dropdown-toggle {
-    color: white ;
-    font-weight: 500;
-}
-
-/* Dropdown menu background and items */
+/* Dropdown menu */
 .dropdown-menu {
     background-color: white;
     border: none;
@@ -52,7 +50,7 @@ body {
     background-color: white; 
 }
 
-/* === Main Content Area === */
+/* === Page Content === */
 #page-content {
     margin-left: 0;
     padding: 20px;
@@ -70,6 +68,3 @@ button {
     font-size: 14px;
     cursor: pointer;
 }
-
-
-
