@@ -50,33 +50,41 @@ from apps import module1a, module1b, module2, module3a, module3b, module4a, modu
 ### For uncommenting 
 
 navbar = dbc.Navbar(
-    dbc.Container([
-        dbc.NavbarBrand("Dashboard", className="ms-2 text-white", style={"fontSize": "1.6rem"}),
-        dbc.NavbarToggler(id="navbar-toggler"),
+    dbc.Container(fluid=True, children=[
+         # LEFT: Brand
+        dbc.Row([
+            dbc.Col(
+                dbc.NavbarBrand("T5G1", href = "/", className="text-white", style={"fontSize": "3rem", "marginLeft": "2rem"}),
+                width="auto"
+            )
+        ], align="center", className="g-0"),
+
+        # CENTER: Navbar Links (in Collapse)
+        dbc.NavbarToggler(id="navbar-toggler", className = "ms-3"),
         dbc.Collapse(
             dbc.Nav([
-                dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-3 fs-5", active="exact")),
+                # dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-2 fs-5", active="exact")),
                 dbc.DropdownMenu(label="Sector Statistics", children=[
                     dbc.DropdownMenuItem("top N partner country for sector", href="/module1a"),
                     dbc.DropdownMenuItem("sector share change over time", href="/module1b"),
-                ], nav=True, in_navbar=True, className="mx-3 fs-5"),
-                dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3 fs-5", active="exact")),
+                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
+                dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3",style={"fontSize": "1.8rem"}, active="exact")),
                 dbc.DropdownMenu(label="Country Statistics", children=[
                     dbc.DropdownMenuItem("top N partner country for sector", href="/module3a"),
                     dbc.DropdownMenuItem("sector share change over time", href="/module3b"),
-                ], nav=True, in_navbar=True, className="mx-3 fs-5"),
+                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
                 dbc.DropdownMenu(label="Geopolitical Trade Statistics", children=[
                     dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
                     dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
-                ], nav=True, in_navbar=True, className="mx-3 fs-5"),
-                dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3 fs-5", active="exact")),
+                ], nav=True, in_navbar=True, className="mx-3", style={"fontSize": "1.8rem"}),
+                dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3", style={"fontSize": "1.8rem"}, active="exact")),
             ], className="ms-auto", navbar=True),
             id="navbar-collapse",
             navbar=True
         ),
 
         # RIGHT-ALIGNED PREDICT BUTTON (not inside the Collapse/nav)
-        dbc.Button("Predict", id="open-predict", color="light", className="ms-3"),
+        dbc.Button("Predict", id="open-predict", color="light", className="ms-3", style={"fontSize": "2rem"}),
 
         # Offcanvas that opens from right
         dbc.Offcanvas(
@@ -112,13 +120,16 @@ navbar = dbc.Navbar(
         html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
         html.Div(id="input-status-message", className="mt-2 text-muted"),
 
-    ],
-)
-,
+    ], style={"maxWidth": "1800px"}
+),
     ]),
-    color="primary",
-    dark=True,
+    color="#2C3E50",
+    # dark=True,
     fixed="top",
+    style={
+        "height": "125px",  # Slightly taller navbar
+        "padding": "0.5rem 1rem"  # Adjusted padding
+    },
     className="mb-4 px-4"
 )
 
