@@ -109,7 +109,7 @@ layout = html.Div([
                     html.Div("Country View", style={"marginRight": "10px", "marginBottom": "0"}),
                     daq.BooleanSwitch(
                         id="view-toggle-switch",
-                        on=True,
+                        on=False, # False means Country View is selected (default)
                         color="#000000",  # black color when ON
                         style={"marginRight": "10px"}
                     ),
@@ -120,7 +120,7 @@ layout = html.Div([
             # 2. Filter Dropdown
             html.Div([
                 html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
-                dcc.Dropdown(id="filter-dropdown", placeholder="", style={"width": "220px"})
+                dcc.Dropdown(id="filter-dropdown", placeholder = '', style={"width": "220px"})
             ], style={"marginRight": "30px"}),
 
             # 3. Trade Type Dropdown
@@ -133,7 +133,7 @@ layout = html.Div([
                         {"label": "Export Value", "value": "Export Value"},
                         {"label": "Import Value", "value": "Import Value"}
                     ],
-                    placeholder="-",
+                    value = "Total Trade Volume",
                     style={"width": "220px"}
                 )
             ])
@@ -141,7 +141,7 @@ layout = html.Div([
 
 
     dcc.Tabs(id="trade-tabs", value="ranking", children=[
-        dcc.Tab(label="Ranking", value="ranking"),
+        dcc.Tab(label="Ranking (Sector selection is optional)", value="ranking"),
         dcc.Tab(label="Dumbbell", value="dumbbell"),
         dcc.Tab(label="Bubble", value="bubble")
     ]),
@@ -171,9 +171,13 @@ def render_tab(tab):
 )
 def update_dropdown_options(is_country_view):
     if is_country_view:
-        return [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())], "Choose a specific country", None
+        options = [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())]
+        return options, "Choose a specific country", options[0]["value"] if options else None
     else:
-        return [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())], "Choose a specific sector", None
+        options = [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())]
+        # Default to "Sector 1" if it's in the list
+        default_value = "Sector 1" if any(s["value"] == "Sector 1" for s in options) else options[0]["value"] if options else None
+        return options, "Choose a specific sector", default_value
 
 
 def update_button_style(n_country, n_sector):
@@ -191,7 +195,7 @@ def update_button_style(n_country, n_sector):
     Output("dumbbell-graph", "figure"),
     Input("filter-dropdown", "value"),
     Input("trade-type-dropdown", "value"),
-    Input("view-toggle-switch", "on")  # this returns True (country) or False (sector)
+    Input("view-toggle-switch", "on")  # this returns True (country options in dropdown2) or False (sector options in dropdown2)
 )
 def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
     if not selected_filter or not trade_type:
