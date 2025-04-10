@@ -84,7 +84,7 @@ navbar = dbc.Navbar(
         ),
 
         # RIGHT-ALIGNED PREDICT BUTTON (not inside the Collapse/nav)
-        dbc.Button("Predict", id="open-predict", color="light", className="ms-3", style={"fontSize": "2rem"}),
+        dbc.Button("Predict", id="open-predict", color="light", className="ms-3", style={"fontSize": "1.2rem"}),
 
         # Offcanvas that opens from right
         dbc.Offcanvas(
