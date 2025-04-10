@@ -71,8 +71,8 @@ def format_volume(val):
 # === Stats ===
 card_titles = [
     "Total Trade Volume",
-    "Top Share by Sector",
     "Top Share by Country",
+    "Top Share by Sector",
     "Average Geopolitical Distance"
 ]
 
