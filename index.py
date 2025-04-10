@@ -125,7 +125,7 @@ layout = html.Div([
                     html.Div("Year 2023", style={"fontSize": "0.9rem", "color": "white"})
                 ], className="d-flex flex-column justify-content-center align-items-center h-100")
             ], className="text-center", style={"height": "250px", "backgroundColor": "#8d9db6", "borderRadius": "12px"})
-        ], id="go-to-module4a", style={"cursor": "pointer"}), width=3),
+        ], id="go-to-module4a", style={"cursor": "pointer"}), width=3)
     ], className="mb-3 g-3 px-3"),
 
     html.Div([
