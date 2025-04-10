@@ -65,8 +65,89 @@ COUNTRY_LABELS = {
 COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
 COUNTRY_LIST = sorted(COUNTRY_LABELS.values())
 
+# layout = html.Div([
+#     #dcc.Store(id="input-uploaded"),
+#     dcc.Store(id="trade-type-select1b", data='total'),
+#     dcc.Store(id="display-type1b", data='percentage'),
+
+#     html.H1("Countries' Trade Breakdown by Sector", className="text-center mb-4", style={'color': '#2c3e50'}),
+
+#     html.Div([
+#         html.Div([
+#             html.Label("Select a Country", className="form-label fw-semibold mb-1"),
+#             dcc.Dropdown(
+#                 id='country-select1b',
+#                 options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
+#                 value= 'Singapore',
+#                 placeholder='Select a Country',
+#                 className="mb-3",
+#                 style={"width": "100%"}
+#             )
+#         ], className="col-md-6"),
+
+#         html.Div([
+#             html.Label("Partner Country", className="form-label fw-semibold mb-1"),
+#             dcc.Dropdown(
+#                 id='country-select-alt21b',
+#                 style={"color": "black", "backgroundColor": "white", "width": "100%"},
+#                 placeholder="Select partner country",
+#                 searchable=True,
+#                 className="mb-3"
+#             )
+#         ], className="col-md-6")
+#     ], className="row mb-3"),
+
+#     html.Div([
+#         html.Div([
+#     html.Div([
+#                 html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
+#                 daq.ToggleSwitch(
+#                     id='toggle-display1b',
+#                     label='Volume / Percentage Share',
+#                     value=True,
+#                     className="mb-2",
+#                     size=60)
+#         ], className="col-md-6 d-flex flex-column align-items-center"),
+#         html.Div([
+#             html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+#             dbc.ButtonGroup([
+#                 dbc.Button("Trade Volume", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+#                 dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
+#                 dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
+#             ], className='w-100')
+#         ], className="col-md-6"),
+
+#         # html.Div([
+#         #     html.Label("Display Type", className="form-label fw-semibold mb-1"),
+#         #     daq.ToggleSwitch(
+#         #         id='toggle-display1b',
+#         #         label='Percentage / Volume',
+#         #         value=True,
+#         #         className="mb-2"
+#         #     )
+#         # ], className="col-md-6"),
+        
+
+#     ], className="row mb-4")
+#     ]),
+
+#     html.Div(id="tab-warning1b", className="text-danger mb-2 text-center"),
+
+#     dcc.Tabs(id="module1b-tabs", value="historical", children=[
+#         dcc.Tab(label="Historical", value="historical"),
+#         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
+#     ]),
+
+#     html.Div(id="module1b-tab-content", className="mt-3"),
+
+#     html.Div([
+#         html.Div(id='country-title1b', style={'display': 'none'}),
+#         dcc.Graph(id='country-treemap1b', style={'display': 'none'}),
+#         dcc.Graph(id='country-bar1b', style={'display': 'none'})
+#     ], style={'display': 'none'})
+# ])
+# new layout trial 
 layout = html.Div([
-    dcc.Store(id="input-uploaded"),
     dcc.Store(id="trade-type-select1b", data='total'),
     dcc.Store(id="display-type1b", data='percentage'),
 
@@ -78,7 +159,7 @@ layout = html.Div([
             dcc.Dropdown(
                 id='country-select1b',
                 options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
-                value= 'Singapore',
+                value='Singapore',
                 placeholder='Select a Country',
                 className="mb-3",
                 style={"width": "100%"}
@@ -99,43 +180,29 @@ layout = html.Div([
 
     html.Div([
         html.Div([
-        #     html.Label("Trade Type", className="form-label fw-semibold mb-1"),
-        #     dbc.ButtonGroup([
-        #         dbc.Button("Total", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary'),
-        #         dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm'),
-        #         dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm')
-        #     ], className='w-100')
-        # ], className="col-md-6"),
-        html.Div([
-            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
-            dbc.ButtonGroup([
-                dbc.Button("Trade Volume", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
-                dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
-                dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
-            ], className='w-100')
-        ], className="col-md-6"),
+            html.Label("Trade Type", className="form-label fw-semibold mb-1"),
+            html.Div([
+                html.Div([
+                    dbc.ButtonGroup([
+                        dbc.Button("Trade Volume", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                        dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
+                        dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
+                    ], className='w-100')
+                ], className="col-md-9"),
 
-        # html.Div([
-        #     html.Label("Display Type", className="form-label fw-semibold mb-1"),
-        #     daq.ToggleSwitch(
-        #         id='toggle-display1b',
-        #         label='Percentage / Volume',
-        #         value=True,
-        #         className="mb-2"
-        #     )
-        # ], className="col-md-6"),
-        html.Div([
-            html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
-            daq.ToggleSwitch(
-                id='toggle-display1b',
-                label='Volume / Percentage Share',
-                value=True,
-                className="mb-2",
-                size=60)
-        ], className="col-md-6 d-flex flex-column align-items-center"),
-
-    ], className="row mb-4")
-    ]),
+                html.Div([
+                    html.Label("Display Type", className="form-label fw-semibold mb-1"),
+                    daq.ToggleSwitch(
+                        id='toggle-display1b',
+                        label='Volume / Percentage Share',
+                        value=True,
+                        className="mt-1",
+                        size=60
+                    )
+                ], className="col-md-3 d-flex flex-column align-items-center justify-content-center")
+            ], className="row")
+        ], className="mb-4"),
+        ]),
 
     html.Div(id="tab-warning1b", className="text-danger mb-2 text-center"),
 
@@ -152,6 +219,8 @@ layout = html.Div([
         dcc.Graph(id='country-bar1b', style={'display': 'none'})
     ], style={'display': 'none'})
 ])
+
+
 
 
 app = get_app()
