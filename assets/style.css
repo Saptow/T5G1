@@ -1,12 +1,6 @@
 
-/* === GLOBAL THEME OVERRIDES === */
 body {
-    background-image: url("/assets/homepage.png");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-
+    background-color: #f4f6f9; 
     font-family: 'Lato', sans-serif;
     font-size: 14px;
     color: #333;
