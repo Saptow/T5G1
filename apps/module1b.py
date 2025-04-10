@@ -911,25 +911,45 @@ layout = html.Div([
     ], className="row mb-3"),
 
 
-    html.Div([
-        html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
-        dbc.ButtonGroup([
-            dbc.Button("Trade Volume", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary'),
-            dbc.Button("Exports", id='btn-export7abc', n_clicks=0, outline=True, size='sm', color='primary'),
-            dbc.Button("Imports", id='btn-import7abc', n_clicks=0, outline=True, size='sm', color='primary')
-        ], className='w-100')
-    ], className="mb-4"),
+    # html.Div([
+    #     html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+    #     dbc.ButtonGroup([
+    #         dbc.Button("Trade Volume", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary'),
+    #         dbc.Button("Exports", id='btn-export7abc', n_clicks=0, outline=True, size='sm', color='primary'),
+    #         dbc.Button("Imports", id='btn-import7abc', n_clicks=0, outline=True, size='sm', color='primary')
+    #     ], className='w-100')
+    # ], className="mb-4"),
 
+    # html.Div([
+    #     html.Label("Display Mode", className="form-label fw-semibold mb-2"),
+    #     daq.ToggleSwitch(
+    #         id='toggle-display7abc',
+    #         label='Volume / Percentage Share',
+    #         value=True,
+    #         className="mb-2",
+    #         size=60
+    #     )
+    # ], className="mb-4 d-flex flex-column align-items-center"),
     html.Div([
-        html.Label("Display Mode", className="form-label fw-semibold mb-2"),
-        daq.ToggleSwitch(
-            id='toggle-display7abc',
-            label='Volume / Percentage Share',
-            value=True,
-            className="mb-2",
-            size=60
-        )
-    ], className="mb-4 d-flex flex-column align-items-center"),
+        html.Div([
+            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+            dbc.ButtonGroup([
+                dbc.Button("Trade Volume", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'}),
+                dbc.Button("Exports", id='btn-export7abc', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'}),
+                dbc.Button("Imports", id='btn-import7abc', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'})
+            ], className='w-100')
+        ], className="col-md-8"),
+
+        html.Div([
+            html.Label("Display Mode", className="form-label fw-semibold mb-1 text-center w-100"),
+            daq.ToggleSwitch(
+                id='toggle-display7abc',
+                label='Volume / Percentage Share',
+                value=True,
+                size=80
+            )
+        ], className="col-md-4 d-flex flex-column align-items-center justify-content-center")
+    ], className="row mb-4"),
   
     dcc.Tabs(id="module1c-tabs7abc", value="historical", className="mb-2", children=[
         dcc.Tab(label="Historical", value="historical"),
