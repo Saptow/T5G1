@@ -1,12 +1,19 @@
+
 /* === GLOBAL THEME OVERRIDES === */
 body {
-    background-color: #f4f6f9; 
+    background-image: url("/assets/homepage.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+
     font-family: 'Lato', sans-serif;
     font-size: 14px;
     color: #333;
     margin: 0;
     padding: 120px;
 }
+
 
 /* === Navbar Styling === */
 .navbar {
@@ -69,3 +76,4 @@ button {
     font-size: 14px;
     cursor: pointer;
 }
+
