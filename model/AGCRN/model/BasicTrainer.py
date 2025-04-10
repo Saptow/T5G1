@@ -24,8 +24,8 @@ class Trainer(object):
         self.train_per_epoch = len(train_loader)
         if val_loader != None:
             self.val_per_epoch = len(val_loader)
-        self.best_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}', f'best_model_lr{args.lr_init}/{args.embed_dim}.pth')
-        self.loss_figure_path = os.path.join(self.args.log_dir, 'loss.png')
+        self.best_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}_lr_decay_{args.lr_decay_rate}', 'best_model.pth')
+        self.loss_figure_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}_lr_decay_{args.lr_decay_rate}', 'loss.png')
         #log
         if os.path.isdir(args.log_dir) == False and not args.debug:
             os.makedirs(args.log_dir, exist_ok=True)
@@ -44,15 +44,14 @@ class Trainer(object):
             for batch_idx, (data, target) in enumerate(val_dataloader):
                 data = data[..., :self.args.input_dim]
                 label = target[..., :self.args.output_dim]
-                output = self.model(data, target, teacher_forcing_ratio=0.)
+                output = self.model(data, target, teacher_forcing_ratio=0.) #shape is [3, 4, 306, 8]
                 if self.args.real_value:
                     label = self.scaler.inverse_transform(label)
                 last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
                 print("output shape:", output.shape)
                 print("label shape:", label.shape)
                 print('last_output shape:', last_output.shape)
-
-                loss= self.loss(last_output, label)
+                loss= self.loss(output, label)
                 # loss = self.loss(output, label)
                 #a whole batch of Metr_LA is filtered
                 if not torch.isnan(loss):
@@ -77,16 +76,17 @@ class Trainer(object):
             else:
                 teacher_forcing_ratio = 1.
             #data and target shape: B, T, N, F; output shape: B, T, N, F
-            output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio)
+            output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio) # output shape is [3,4,306,8]
+
             # Extract only the last time step along the horizon dimension
-            last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
+            # last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
             if self.args.real_value:
                 label = self.scaler.inverse_transform(label)
             print("output shape:", output.shape)
             print("label shape:", label.shape)
-            print('last_output shape:', last_output.shape)
-            loss = self.loss(last_output, label)
-            # loss=self.loss(output, label)
+            # print('last_output shape:', last_output.shape)
+            # loss = self.loss(last_output, label)
+            loss=self.loss(output, label)
             loss.backward()
 
             # add max grad clipping
@@ -148,7 +148,7 @@ class Trainer(object):
                     break
             # save the best state
             if best_state == True:
-                self.logger.info('*********************************Current best model saved!')
+                self.logger.info('Current best model saved!')
                 best_model = copy.deepcopy(self.model.state_dict())
 
         training_time = time.time() - start_time
