@@ -63,17 +63,17 @@ navbar = dbc.Navbar(
         dbc.NavbarToggler(id="navbar-toggler", className = "ms-3"),
         dbc.Collapse(
             dbc.Nav([
-                # dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-2 fs-5", active="exact")),
-                dbc.DropdownMenu(label="Sector Statistics", children=[
-                    dbc.DropdownMenuItem("top N partner country for sector", href="/module1a"),
-                    dbc.DropdownMenuItem("sector share change over time", href="/module1b"),
-                ], nav=True, in_navbar=True, className="mx-3"),
                 dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3", active="exact")),
-                dbc.DropdownMenu(label="Country Statistics", children=[
-                    dbc.DropdownMenuItem("top N partner country for sector", href="/module3a"),
-                    dbc.DropdownMenuItem("sector share change over time", href="/module3b"),
+                # dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-2 fs-5", active="exact")),
+                dbc.DropdownMenu(label="Sectors", children=[
+                    dbc.DropdownMenuItem("Sector Share Breakdown", href="/module1a"),
+                    dbc.DropdownMenuItem("Sector Share Trend", href="/module1b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
-                dbc.DropdownMenu(label="Geopolitical Trade Statistics", children=[
+                dbc.DropdownMenu(label="Countries", children=[
+                    dbc.DropdownMenuItem("Country Share Breakdown", href="/module3a"),
+                    dbc.DropdownMenuItem("Country Share Trend", href="/module3b"),
+                ], nav=True, in_navbar=True, className="mx-3"),
+                dbc.DropdownMenu(label="Geopolitical Distance", children=[
                     dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
                     dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
