@@ -8,16 +8,16 @@ from ..lib.logger import get_logger
 from ..lib.metrics import All_Metrics
 
 class Trainer(object):
-    def __init__(self, model, loss, optimizer, train_loader, val_loader, 
-                #  test_loader,
-                 scaler, args, lr_scheduler=None):
+    def __init__(self, model, loss, optimizer, train_loader, val_loader, scaler, args,
+                 test_loader=None,
+                 lr_scheduler=None):
         super(Trainer, self).__init__()
         self.model = model
         self.loss = loss
         self.optimizer = optimizer
         self.train_loader = train_loader
         self.val_loader = val_loader
-        # self.test_loader = test_loader
+        self.test_loader = test_loader
         self.scaler = scaler
         self.args = args
         self.lr_scheduler = lr_scheduler
