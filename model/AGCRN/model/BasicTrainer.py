@@ -8,8 +8,9 @@ from ..lib.logger import get_logger
 from ..lib.metrics import All_Metrics
 
 class Trainer(object):
-    def __init__(self, model, loss, optimizer, train_loader, val_loader, test_loader,
-                 scaler, args, lr_scheduler=None):
+    def __init__(self, model, loss, optimizer, train_loader, val_loader, scaler, args,
+                 test_loader=None,
+                 lr_scheduler=None):
         super(Trainer, self).__init__()
         self.model = model
         self.loss = loss
@@ -23,12 +24,12 @@ class Trainer(object):
         self.train_per_epoch = len(train_loader)
         if val_loader != None:
             self.val_per_epoch = len(val_loader)
-        self.best_path = os.path.join(self.args.log_dir, 'best_model.pth')
-        self.loss_figure_path = os.path.join(self.args.log_dir, 'loss.png')
+        self.best_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}_lr_decay_{args.lr_decay_rate}', 'best_model.pth')
+        self.loss_figure_path = os.path.join(self.args.log_dir+f'/lr_init_{args.lr_init}_embed_dim_{args.embed_dim}_lr_decay_{args.lr_decay_rate}', 'loss.png')
         #log
         if os.path.isdir(args.log_dir) == False and not args.debug:
             os.makedirs(args.log_dir, exist_ok=True)
-        self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug)
+        self.logger = get_logger(args.log_dir, name=args.model, debug=args.debug,args=args)
         self.logger.info('Experiment log path in: {}'.format(args.log_dir))
         #if not args.debug:
         #self.logger.info("Argument: %r", args)
@@ -43,10 +44,15 @@ class Trainer(object):
             for batch_idx, (data, target) in enumerate(val_dataloader):
                 data = data[..., :self.args.input_dim]
                 label = target[..., :self.args.output_dim]
-                output = self.model(data, target, teacher_forcing_ratio=0.)
+                output = self.model(data, target, teacher_forcing_ratio=0.) #shape is [3, 4, 306, 8]
                 if self.args.real_value:
                     label = self.scaler.inverse_transform(label)
-                loss = self.loss(output.cuda(), label)
+                last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
+                print("output shape:", output.shape)
+                print("label shape:", label.shape)
+                print('last_output shape:', last_output.shape)
+                loss= self.loss(output, label)
+                # loss = self.loss(output, label)
                 #a whole batch of Metr_LA is filtered
                 if not torch.isnan(loss):
                     total_val_loss += loss.item()
@@ -70,10 +76,17 @@ class Trainer(object):
             else:
                 teacher_forcing_ratio = 1.
             #data and target shape: B, T, N, F; output shape: B, T, N, F
-            output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio)
+            output = self.model(data, target, teacher_forcing_ratio=teacher_forcing_ratio) # output shape is [3,4,306,8]
+
+            # Extract only the last time step along the horizon dimension
+            # last_output = output[:, -1, :, :]  # Now shape [4, 306, 8]
             if self.args.real_value:
                 label = self.scaler.inverse_transform(label)
-            loss = self.loss(output.cuda(), label)
+            print("output shape:", output.shape)
+            print("label shape:", label.shape)
+            # print('last_output shape:', last_output.shape)
+            # loss = self.loss(last_output, label)
+            loss=self.loss(output, label)
             loss.backward()
 
             # add max grad clipping
@@ -106,10 +119,10 @@ class Trainer(object):
             train_epoch_loss = self.train_epoch(epoch)
             #print(time.time()-epoch_time)
             #exit()
-            if self.val_loader == None:
-                val_dataloader = self.test_loader
-            else:
-                val_dataloader = self.val_loader
+            # if self.val_loader == None:
+            #     val_dataloader = self.test_loader
+            
+            val_dataloader = self.val_loader
             val_epoch_loss = self.val_epoch(epoch, val_dataloader)
 
             #print('LR:', self.optimizer.param_groups[0]['lr'])
@@ -135,7 +148,7 @@ class Trainer(object):
                     break
             # save the best state
             if best_state == True:
-                self.logger.info('*********************************Current best model saved!')
+                self.logger.info('Current best model saved!')
                 best_model = copy.deepcopy(self.model.state_dict())
 
         training_time = time.time() - start_time
@@ -143,13 +156,16 @@ class Trainer(object):
 
         #save the best model to file
         if not self.args.debug:
+            parent_dir = os.path.dirname(self.best_path)
+            if not os.path.exists(parent_dir):
+                os.makedirs(parent_dir)
             torch.save(best_model, self.best_path)
             self.logger.info("Saving current best model to " + self.best_path)
 
         #test
         self.model.load_state_dict(best_model)
         #self.val_epoch(self.args.epochs, self.test_loader)
-        self.test(self.model, self.args, self.test_loader, self.scaler, self.logger)
+        # self.test(self.model, self.args, self.test_loader, self.scaler, self.logger)
 
     def save_checkpoint(self):
         state = {

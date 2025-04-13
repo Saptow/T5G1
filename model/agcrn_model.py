@@ -1,4 +1,5 @@
-from torch_geometric_temporal.nn.recurrent import AGCRN
+# from torch_geometric_temporal.nn.recurrent import AGCRN
+from AGCRN.model.AGCRNCell import AGCRNCell as AGCRN
 from torch import nn
 import torch
 
