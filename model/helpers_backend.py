@@ -194,7 +194,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     
     # Convert the dictionary to a DataFrame
     args = Args()
-    args.set_args(embed_dim=9, lr_init=0.005489139587271934,lr_decay_rate=0.18605505546333992, rnn_units=64, num_layers=2, weight_decay=3.0450041080579258e-05) #based on best model by Optuna
+    args.set_args(embed_dim=10, lr_init=0.005489139587271934,lr_decay_rate=0.18605505546333992, rnn_units=64, num_layers=2, weight_decay=3.0450041080579258e-05) #based on best model by Optuna
 
     #convert to tensor
     test_data_tensor, years, country_pairs_model = csv_to_tensor_run('../data/final/run_model_data.csv',sentiment_dict=sentiment_dict,year_nlp=year_nlp)
@@ -226,7 +226,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     #load model and previously saved states
     model=AGCRNFinal(args)
     model=model.to(args.device)
-    model.load_state_dict(torch.load('./logs/best_model_69.pth'))
+    model.load_state_dict(torch.load('./logs/best_model_69.pth',map_location=torch.device('cpu')))
     model.eval()
     with torch.no_grad():
         test_x_tensor = test_x_tensor.to(args.device)
@@ -309,7 +309,6 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     temp['total_export_A_to_B']=temp[bec_export_cols].sum(axis=1)
     temp['total_import_A_from_B']=temp[bec_import_cols].sum(axis=1)
     temp['trade_volume']=temp['total_export_A_to_B']+temp['total_import_A_from_B']
-    temp['scenario']='forecast'
 
     #reorder columns for frontend
     temp=temp[['country_a','country_b','year','total_export_A_to_B','total_import_A_from_B','trade_volume']+bec_export_cols+bec_import_cols+['scenario']]
