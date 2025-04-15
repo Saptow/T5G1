@@ -3,10 +3,11 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import dcc, html, Input, Output, State, callback_context, get_app
+from dash import dcc, html, Input, Output, State, callback_context, get_app, MATCH, ALL
 import dash
 import pycountry 
 import dash_daq as daq
+
 
 app = get_app()
 
@@ -48,7 +49,7 @@ combined_df["Export Value"] = combined_df["Reporter Export"] + combined_df["Part
 combined_df["Import Value"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
 
 pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade Volume", "Export Value", "Import Value"])
-percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)
+percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)*100
 percent_change.reset_index(inplace=True)
 
 
@@ -94,14 +95,41 @@ for col in ["Export Value", "Import Value", "Total Trade Volume"]:
 #         (pivoted[f"{col}_2026b"] - pivoted[f"{col}_2026a"]) / pivoted[f"{col}_2026a"].replace(0, 1)
 #     ) * 100
 
-
-# === LAYOUT ===
 layout = html.Div([
+
     dcc.Store(id="view-toggle", data='country'),
 
-    html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="text-center mb-3"),
-        html.Div([
-            # 1. Toggle Switch Section
+    html.Div([  
+        # === OVERLAY (Positioned absolutely within this container) ===
+        html.Div(
+            id="page-overlay",
+            children=[
+                html.Div("No visualisation is currently displayed as no prediction input has been provided. " \
+                "Click the Predict button and enter a URL or select a sample article to view the page.", className="overlay-text")
+            ],
+            style={
+                "position": "absolute",
+                "top": 0,
+                "left": 0,
+                "width": "100%",
+                "height": "100%",
+                "backgroundColor": "rgba(0, 0, 0, 0.6)",
+                "zIndex": 10,
+                "display": "flex",
+                "justifyContent": "center",
+                "alignItems": "center",
+                "textAlign": "center",
+                "fontSize": "1.5rem",
+                "fontWeight": "bold",
+                "color": "white",
+            }
+        ),
+
+        # === Main Page Content ===
+        html.Div(id="main-page-content", children=[
+            html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="text-center mb-3"),
+            html.Div([
+                # 1. Toggle Switch Section
             html.Div([
                 html.P("1. Sector/Country View:", style={"marginBottom": "6px"}),
 
@@ -137,17 +165,44 @@ layout = html.Div([
                     style={"width": "220px"}
                 )
             ])
-        ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"}, className="mb-4"),
+            ], style={"display": "flex", "flexWrap": "wrap", "alignItems": "flex-end"}, className="mb-4"),
 
-
-    dcc.Tabs(id="trade-tabs", value="ranking", children=[
-        dcc.Tab(label="Ranking (Sector selection is optional)", value="ranking"),
-        dcc.Tab(label="Dumbbell", value="dumbbell"),
-        dcc.Tab(label="Bubble", value="bubble")
-    ]),
-
-    html.Div(id="tab-content")
+            dcc.Tabs(id="trade-tabs", value="ranking", children=[
+                dcc.Tab(label="Ranking (Sector selection is optional)", value="ranking"),
+                dcc.Tab(label="Dumbbell", value="dumbbell"),
+                dcc.Tab(label="Bubble", value="bubble")
+            ]),
+            html.Div(id="tab-content")
+        ])
+    ], style={"position": "relative"})  
 ])
+
+
+# Callback to control overlay visibility
+
+@app.callback(
+    Output("page-overlay", "style"),
+    Input("uploaded-url", "data")
+)
+def toggle_overlay(news_url_data):
+    if news_url_data:
+        return {"display": "none"}  
+    return {
+        "position": "absolute",
+        "top": 0,
+        "left": 0,
+        "width": "100%",
+        "height": "100%",
+        "backgroundColor": "white",
+        "zIndex": 9999,
+        "display": "flex",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "fontSize": "1.5rem",
+        "fontWeight": "bold",
+        "color": "black",
+    }
+
 
 # === TAB SELECTION CALLBACK ===
 @app.callback(
@@ -299,7 +354,7 @@ def update_ranking_chart(selected_filter, trade_type, is_country_view):
     fig.update_layout(
         template="plotly_white",
         xaxis_title="Percentage Change (%)",
-        xaxis_tickformat=".1%",
+        xaxis_tickformat=".1f",
         yaxis_title="",
         yaxis=dict(autorange="reversed"),
         coloraxis_showscale=False,
