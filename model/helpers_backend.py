@@ -8,6 +8,26 @@ from AGCRN.lib.dataloader import normalize_dataset
 from sklearn.preprocessing import MinMaxScaler
 from agcrn_model import AGCRNFinal
 
+#imports from NLP side
+import pycountry
+import trafilatura
+import json
+import dateparser
+import re
+import requests
+from langdetect import detect
+from transformers import AutoTokenizer, AutoConfig
+from itertools import combinations
+from datetime import datetime
+from trafilatura.settings import DEFAULT_CONFIG
+from copy import deepcopy
+import torch.nn.functional as F
+from transformers import (
+    AutoModelForSequenceClassification,
+    PreTrainedModel
+)
+from transformers.modeling_outputs import SequenceClassifierOutput
+
 
 ## defining variables
 num_countries=17
@@ -69,10 +89,367 @@ class Args:
             else:
                 print(f"Warning: '{key}' is not a recognized attribute of the Args class.")
 
+########################################################
+####################### NLP MODEL ######################
+########################################################
+class DebertaForRegression(PreTrainedModel):
+    """
+    Outputs a scalar tone score in [-1, 1] by taking the expected value of
+    the 3‑class sentiment probabilities:  (-1, 0, +1) · softmax(logits).
+    """
+    def __init__(self, config):
+        super().__init__(config)
+        self.classifier = AutoModelForSequenceClassification.from_pretrained(
+            config._name_or_path, config=config
+        )
+        self.register_buffer("value_map", torch.tensor([-1.0, 0.0, 1.0]))
+
+        self.loss_fn = nn.MSELoss()
+
+    def forward(self, input_ids, attention_mask=None, labels=None, num_items_in_batch: int | None = None,  **kwargs ):
+        out = self.classifier(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            **kwargs
+        )
+        logits = out.logits                      # (B, 3)
+        probs  = F.softmax(logits, dim=-1)       # (B, 3)
+
+        # Expected value: (B, 3) · (3,)  → (B,)
+        tone   = (probs * self.value_map).sum(dim=-1)
+
+        loss = None
+        if labels is not None:
+            loss = self.loss_fn(tone, labels.float())
+
+        return SequenceClassifierOutput(
+            loss   = loss,          # scalar or None
+            logits = tone,          # (B,) continuous in [-1, 1]
+            hidden_states = out.hidden_states,
+            attentions    = out.attentions,
+        )
 #####################################################
 ############### HELPER FUNCTIONS ####################
 #####################################################
 
+## NLP functions
+def process_article_for_sentiment_analysis(url, debug=False):
+    """
+    Unified function that:
+    1. Extracts article content and publish date from a URL
+    2. Cleans and preprocesses the text
+    3. Identifies country pairs in the text
+    4. Predicts sentiment scores for each country pair
+    5. Returns both the sentiment scores and publication year
+
+    Args:
+        url (str): URL of the article to analyze
+        model_path (str): Path to the model on Hugging Face
+        debug (bool): Whether to print debug information
+
+    Returns:
+            - sentiment_scores (dict): Dictionary of country pairs and their sentiment scores
+            - publication_year (int): Year of publication of the article
+    """
+    # Step 1: Define unwanted keywords for text cleaning
+    unwanted_keywords = [
+        "disclaimer", "terms and conditions", "for more information",
+        "privacy policy", "cookies", "contact us", "cookie policy",
+        "FAQ", "unsubscribe", "user agreement", "site policy",
+        "sign up", "stay updated"
+    ]
+
+    # Step 2: Set up country normalization
+    countries_to_keep = {
+        'CHN', 'MYS', 'USA', 'HKG', 'IDN', 'KOR', 'JPN', 'THA', 'AUS', 'VNM',
+        'IND', 'PHL', 'DEU', 'FRA', 'CHE', 'NLD', 'SGP'
+    }
+
+    # Build name-to-ISO3 mapping
+    name_to_iso3 = {}
+    for country in pycountry.countries:
+        iso3 = country.alpha_3
+        if iso3 not in countries_to_keep:
+            continue
+        for key in ["name", "official_name", "common_name"]:
+            val = getattr(country, key, None)
+            if val:
+                name_to_iso3[val.lower()] = iso3
+                #convert to lower case to ensure case insensitive
+
+    # Manual aliases for informal country names (from Kaggle dataset "Country Aliases - List of Alternative Country Names").
+    # Dropped outdated entries and added a few new ones.
+    manual_aliases = {'mainland china': 'CHN',
+                      'federation of malaysia': 'MYS',
+                      'united states': 'USA',
+                      'america': 'USA',
+                      'the states': 'USA',
+                      'u.s.': 'USA'}
+
+
+    name_to_iso3.update({k.lower(): v for k, v in manual_aliases.items()})
+
+    # Trading bloc aliases (top 10 global trade blocs in 2022-23)
+    trading_bloc_aliases = {
+        "apec": ["CHN", "MYS", "USA", "HKG", "IDN", "KOR", "JPN", "THA", "AUS", "VNM", "PHL", "SGP"],
+        "eu": ["DEU", "FRA", "NLD"],
+        "brics": ["CHN", "IND"],
+        "nafta": ["USA"],
+        "usmca": ["USA"],
+        "asean": ["MYS", "IDN", "SGP", "THA", "VNM", "PHL"],
+        "saarc": ["IND"],
+    }
+
+    # UN M49 region mapping
+    un_region_mapping = {
+        "eastern asia": ["CHN", "HKG", "JPN", "KOR"],
+        "south-eastern asia": ["MYS", "IDN", "THA", "VNM", "PHL", "SGP"],
+        "southern asia": ["IND"],
+        "western europe": ["DEU", "FRA", "CHE", "NLD"],
+        "oceania": ["AUS"],
+        "northern america": ["USA"]
+    }
+
+
+
+    # Define the original model repository path for tokenizer and model
+    model_path = "yangheng/deberta-v3-base-absa-v1.1"
+    checkpoint_path = "ML2105/deberta-geopolitical-sentiment"
+
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    config = AutoConfig.from_pretrained(model_path)
+    model = DebertaForRegression.from_pretrained(checkpoint_path, config=config)
+
+    device = "cpu"
+    model = model.to(device)
+
+    # Step 4: Define helper functions
+
+    # Function to load EasyList (ad-blocking) rules
+    def load_easylist_rules():
+        """
+        Loads EasyList rules from the provided URL and parses the rules into a list.
+        """
+        url = "https://easylist.to/easylist/easylist.txt"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            return response.text.splitlines()  # Split the response into a list of lines
+        else:
+            print("Error: Could not retrieve EasyList.")
+            return []
+
+    # Function to remove ad-related content based on EasyList rules
+    def remove_ad_content(content, easylist_rules):
+        """
+        Removes ad-related content from the extracted content using EasyList rules.
+        """
+        for rule in easylist_rules:
+            if rule.startswith('||'):  # Domain-based ad blocking rule
+                ad_domain = rule[2:]
+                content = re.sub(r'https?://(?:[a-zA-Z0-9-]+\.)?' + re.escape(ad_domain), '', content)
+
+        return content
+
+    def remove_unwanted_content(content, unwanted_keywords):
+        """
+        Removes the sentence containing the first occurrence of any unwanted keywords,
+        removes everything after the ellipsis ("..."), and everything after the unwanted keyword.
+        Also removes everything after "Related:".
+        """
+        # Remove unwanted backslashes
+        content = content.replace("\\", "")
+
+        # This matches the sentence that contains the unwanted keyword and everything after it
+        pattern = r"([^.]*\b(?:{})\b[^.]*\.).*".format("|".join(re.escape(keyword) for keyword in unwanted_keywords))
+
+        # Substitute the sentence containing the unwanted keyword and everything after it with an empty string
+        content = re.sub(pattern, "", content, flags=re.IGNORECASE)
+
+        # Remove everything after "Related:" or "related content:" (case-insensitive)
+        content = re.sub(r"([^.]*\b(?:Related:|related content:)\b[^.]*\.).*|(\b(?:Related:|related content:)\b.*)", "", content, flags=re.IGNORECASE)
+
+        return content.strip()
+
+    def extract_articles(url, unwanted_keywords):
+        """
+        Extracts article content and publication date from a given URL using Trafilatura.
+        Cleans content by removing newline characters, ensures no redirects, no external URLs, and language is English.
+        Removes content after any unwanted keywords.
+        """
+        try:
+            # Modify the config settings directly before use
+            my_config = deepcopy(DEFAULT_CONFIG)
+
+            # Disable external URLs and no redirects
+            my_config['DEFAULT']['EXTERNAL_URLS'] = 'off'  # Disable external URL extraction
+            my_config['DEFAULT']['MAX_REDIRECTS'] = '0'    # Disable URL redirection
+
+            # Set download timeout and sleep time
+            my_config['DEFAULT']['DOWNLOAD_TIMEOUT'] = '120'  # Set timeout to 120 seconds
+            my_config['DEFAULT']['SLEEP_TIME'] = '5'         # Set sleep time between requests to 5 seconds
+
+            # Fetch the content from the original URL using the modified config
+            downloaded_html = trafilatura.fetch_url(url, config=my_config)
+
+            if not downloaded_html:
+                raise ValueError("Failed to download content")
+
+            # Extract content using Trafilatura with the custom config
+            extracted = trafilatura.extract(downloaded_html, output_format="json", with_metadata=True, config=my_config)
+            if not extracted:
+                raise ValueError("Trafilatura extraction failed")
+
+            data = json.loads(extracted)
+
+            # Clean and format the content
+            content = data.get("text", "").replace("\n", " ").strip()
+
+            # Remove content after the unwanted keywords
+            content = remove_unwanted_content(content, unwanted_keywords)
+
+            # Remove ad-related content based on EasyList rules
+            easylist_rules = load_easylist_rules()  # Load EasyList rules
+            content = remove_ad_content(content, easylist_rules)
+
+
+            if not content or len(content) < 1500:  # 1500 characters roughly 300 words
+                raise ValueError("Content too short")
+
+            # Manually detect language (ensure it's English)
+            try:
+                detected_language = detect(content)  # Returns 'en' for English
+                if detected_language != 'en':  # If not English, return empty content
+                    print(f"Warning: Non-English content detected. Skipping URL.")
+                    return {"content": "", "publish_date": None}
+            except Exception as e:
+                print(f"Error detecting language: {e}")
+                return {"content": "", "publish_date": None}
+
+            # Continue to extract publication date
+            publish_date_str = data.get("date", None)
+            publish_date = dateparser.parse(publish_date_str) if publish_date_str else None
+
+            formatted_date = publish_date.strftime("%d-%m-%Y") if publish_date else None
+
+            return {"content": content, "publish_date": formatted_date}
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return {"content": "", "publish_date": None}
+
+    # Normalize country name to ISO3
+    def normalize_country(name):
+        return name_to_iso3.get(name.strip().lower(), None)
+
+    # Function to extract relevant countries from the article text
+    def extract_countries_from_text(text):
+        found = set()
+        lowered = text.lower()
+
+        # Direct country match
+        for name in name_to_iso3:
+            if name in lowered:
+                iso = normalize_country(name)
+                if iso:
+                    found.add(iso)
+
+        # Match trading blocs
+        for bloc, members in trading_bloc_aliases.items():
+            if bloc in lowered:
+                found.update(members)
+
+        # Match regions
+        for region, members in un_region_mapping.items():
+            if region in lowered:
+                found.update(members)
+
+        return sorted(found)
+
+    # Generate all unique 2-country combinations
+    def generate_country_pairs(countries):
+        return ['-'.join(sorted(pair)) for pair in combinations(countries, 2)]
+
+    # Predict sentiment for all detected country pairs
+    def predict_all_pairs(text, debug=False):
+        """
+        Predict sentiment scores for each country pair detected in the given text.
+        This function processes article texts and detects country pairs.
+        """
+        detected = extract_countries_from_text(text)
+        pairs = generate_country_pairs(detected)
+
+        if debug:
+            print(f"\n Detected countries: {detected}")
+            print(f" Generated country pairs: {pairs}")
+
+        results = {}
+
+        # Loop through country pairs and run inference on each pair
+        for pair in pairs:
+            # Tokenize the text with overflow handling
+            inputs = tokenizer(
+                text,                # Article text
+                pair,                # Country pair
+                return_tensors="pt",
+                truncation=True,
+                padding="max_length",
+                max_length=512,
+                stride=128,          # Overlap for chunks
+                return_overflowing_tokens=True
+            )
+
+            # Remove overflow_to_sample_mapping from the inputs
+            if "overflow_to_sample_mapping" in inputs:
+                del inputs["overflow_to_sample_mapping"]
+
+            # Initialize variable to accumulate sentiment scores for the chunks
+            total_score = 0
+            num_chunks = 0
+
+            # Iterate through each chunk in overflowed tokens
+            for i in range(len(inputs['input_ids'])):
+                # Get the chunk for this index
+                chunk = {key: value[i:i+1] for key, value in inputs.items()}
+
+                chunk = {k: v.to(model.device) for k, v in chunk.items()}
+
+                with torch.inference_mode():
+                    outputs = model(**chunk)
+                    score = outputs["logits"].item()
+                    # Accumulate the score for the chunk
+                    total_score += score
+                    num_chunks += 1
+
+            # Compute the average score across all chunks for this country pair
+            avg_score = total_score / num_chunks if num_chunks > 0 else 0  # Avoid division by zero
+
+            results[pair] = round(avg_score, 4)  # Store the averaged score for the current pair
+
+        if debug:
+            print(f" Predicted sentiment scores: {results}")
+
+        return results
+
+    # Main function starts here!
+    article_data = extract_articles(url, unwanted_keywords)
+
+    if not article_data["content"]:
+        print("No content extracted from URL.")
+        return {}, None
+
+    # Get the publication year
+    publish_year = None
+    if article_data["publish_date"]:
+        publish_date = datetime.strptime(article_data["publish_date"], "%d-%m-%Y")
+        publish_year = publish_date.year
+
+    # Get sentiment predictions for country pairs in the article
+    sentiment_scores = predict_all_pairs(article_data["content"], debug=debug)
+
+    return sentiment_scores, publish_year
+
+# TGNN side
 def csv_to_tensor_run(csv_file,sentiment_dict,year_nlp=2023):
     """
     Reads a CSV file with columns:
@@ -182,9 +559,9 @@ def train_val_split(x, y, val_ratio=0.2):
     return x_train, y_train, x_val, y_val
 
 
-#####################################################
-############### FINAL FUNCTION ######################
-#####################################################
+##############################################################
+############### FINAL FUNCTION for TGNN ######################
+##############################################################
 def run_tgnn(sentiment_dict, year_nlp=2023):
     """
     Run the T-GNN model with the provided data dictionary.
