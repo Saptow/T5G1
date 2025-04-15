@@ -4,9 +4,9 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 import pandas as pd
 import numpy as np
-from AGCRN.lib.dataloader import normalize_dataset
+from model.AGCRN.lib.dataloader import normalize_dataset
 from sklearn.preprocessing import MinMaxScaler
-from agcrn_model import AGCRNFinal
+from model.agcrn_model import AGCRNFinal
 
 #imports from NLP side
 import pycountry

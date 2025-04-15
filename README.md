@@ -70,3 +70,17 @@ Under Visual Studio Build Tools 2022, click Modify, and install desktop developm
 ![alt text](image.png)
 
 Worst case scenario, I will build a docker image for this...
+
+## Docker Image for deployment (backend)
+
+To build the docker image, run the following command in the root directory of the project:
+
+```sh
+docker build -t t5g1-image .
+```
+
+To run the docker container, use the following command:
+
+```sh
+docker run -p 5000:5000 t5g1-image
+```
