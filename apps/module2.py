@@ -69,6 +69,8 @@ for sector, name in SECTOR_LABELS.items():
 
 df = pd.concat(records, ignore_index=True)
 df["Net Exports"] = df["Export Volume"] - df["Import Volume"]
+# === Placeholder for future prediction data ===
+df_pred = None
 
 # === Set up dropdown values ===
 years = sorted(df['Year'].unique())
@@ -189,7 +191,7 @@ layout = html.Div([
     html.Div([
         dcc.Tabs(id="module2-tabs", value="historical", children=[
             dcc.Tab(label="Historical", value="historical"),
-            dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
+            dcc.Tab(label="Prediction", value="prediction", id="prediction-tab2", disabled=True),
         ]),
         html.Div(id="module2-tabs-container"),
         html.Div(id="module2-tab-content", className="mt-3")
@@ -243,13 +245,24 @@ def register_callbacks(app):
         Input('compare-toggle', 'on')
     )
     def update_map(base_year, compare_year, selected_sectors, selected_countries, metric, topn_range, use_topn, compare_on):
+        global df_pred  # 🔸 Ensure you can access the global prediction df
+
         if not base_year:
             raise PreventUpdate
 
-        year_filter = [base_year, compare_year] if compare_year else [base_year]
-        filtered = df[
-            (df['Year'].isin(year_filter)) &
-            (df['Sector'].isin(selected_sectors))
+        # Decide what years are being used
+        years_used = [base_year]
+        if compare_on and compare_year:
+            years_used.append(compare_year)
+
+        # If 2026 involved and df_pred exists → merge both
+        use_pred = 2026 in years_used
+        current_df = pd.concat([df, df_pred]) if use_pred and df_pred is not None else df
+
+        # Filter based on year + sector
+        filtered = current_df[
+            (current_df['Year'].isin(years_used)) &
+            (current_df['Sector'].isin(selected_sectors))
         ]
 
         grouped = filtered.groupby(['Country', 'Country Code', 'Lat', 'Lon', 'Year'])['Total Volume'].sum().reset_index()
@@ -349,11 +362,18 @@ def register_callbacks(app):
             return px.line(title="Click on a country to see its trends"), {'display': 'none'}, {'display': 'block'}
 
         country = iso_to_country[iso]
-        country_df = df[df['Country'] == country].groupby('Year').agg({
+            
+        if df_pred is not None:
+            combined_df = pd.concat([df, df_pred])
+        else:
+            combined_df = df
+
+        country_df = combined_df[combined_df['Country'] == country].groupby('Year').agg({
             'Total Volume': 'mean',
             'Export Volume': 'mean',
             'Import Volume': 'mean'
         }).reset_index()
+
 
         if chart_type == 'line':
             fig = px.line(country_df, x='Year', y=['Total Volume', 'Export Volume', 'Import Volume'],
@@ -372,10 +392,47 @@ def register_callbacks(app):
 
 @app.callback(
     Output("prediction-tab2", "disabled"),
+    Output("base-year", "options"),
+    Output("compare-year", "options"),
     Input("input-uploaded", "data"),
+    prevent_initial_call=True
 )
-def toggle_prediction_tab(uploaded):
-    return not uploaded
+def handle_prediction_upload(uploaded):
+    global df_pred, years
+
+    if not uploaded:
+        raise PreventUpdate
+
+    # === Load and clean prediction data ===
+    pred_df = pd.read_csv("sample_2026.csv")
+    pred_df = pred_df[pred_df["scenario"] == "postshock"].copy()
+    pred_df.drop(columns=["scenario"], inplace=True)
+
+    records = []
+    for sector, name in SECTOR_LABELS.items():
+        export_col = f"{sector}_export_A_to_B"
+        import_col = f"{sector}_import_A_from_B"
+        temp = pred_df[['year', 'country_b', export_col, import_col]].copy()
+        temp['Country Code'] = temp['country_b']
+        temp['Country'] = temp['Country Code'].apply(lambda code: pycountry.countries.get(alpha_3=code).name if pycountry.countries.get(alpha_3=code) else code)
+        temp['Year'] = temp['year']
+        temp['Lat'] = temp['Country Code'].map(lambda code: COUNTRY_COORDS.get(code, (None, None))[0])
+        temp['Lon'] = temp['Country Code'].map(lambda code: COUNTRY_COORDS.get(code, (None, None))[1])
+        temp['Sector'] = name
+        temp['Export Volume'] = temp[export_col]
+        temp['Import Volume'] = temp[import_col]
+        temp['Total Volume'] = temp['Export Volume'] + temp['Import Volume']
+        records.append(temp[['Year', 'Country', 'Country Code', 'Lat', 'Lon', 'Sector', 'Export Volume', 'Import Volume', 'Total Volume']])
+
+    df_pred = pd.concat(records, ignore_index=True)
+    df_pred["Net Exports"] = df_pred["Export Volume"] - df_pred["Import Volume"]
+
+    # === Update dropdown options with 2026 ===
+    updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
+    options = [{'label': str(y), 'value': y} for y in updated_years]
+
+    return False, options, options
+
 
 @app.callback(
     Output("module2-tabs", "value"),
@@ -392,16 +449,20 @@ def switch_to_prediction_tab(uploaded):
     Input("module2-tabs", "value")
 )
 def render_tab_content(tab):
+    global df_pred
+
     if tab == "historical":
         return html.Div([
             html.Div(style={'marginTop': '20px'}),
             html.H5(id="sector-title2", className="text-center mb-2"),
         ])
+
     elif tab == "prediction":
         return html.Div([
-            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title2", className="text-center mb-2"),
         ])
+
 
 
 app.layout = layout
