@@ -93,7 +93,7 @@ layout = html.Div([
             html.Label("Year Mode:"),
             html.Div([
                 html.Span("Base Year Only", style={"marginRight": "10px"}),
-                daq.BooleanSwitch(id='compare-toggle', on=False, color="#000000"),
+                daq.BooleanSwitch(id='compare-toggle', on=True, color="#000000"),
                 html.Span("Compare Years", style={"marginLeft": "10px"})
             ], style={"display": "flex", "alignItems": "center", "gap": "10px"})
         ]),
@@ -104,7 +104,7 @@ layout = html.Div([
             dcc.Dropdown(
                 id='base-year',
                 options=[{'label': str(y), 'value': y} for y in years],
-                value=2023,
+                value = 2006,
                 style={"width": "250px"}
             )
         ]),
@@ -115,7 +115,7 @@ layout = html.Div([
             dcc.Dropdown(
                 id='compare-year',
                 options=[{'label': str(y), 'value': y} for y in years],
-                placeholder="",
+                value= 2023,                
                 style={"width": "250px"}
             )
         ], id='compare-year-container', style={"display": "none"}),
