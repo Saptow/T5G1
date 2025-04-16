@@ -81,7 +81,9 @@ country_iso = df[['Country', 'Country Code']].drop_duplicates().set_index('Count
 iso_to_country = {v: k for k, v in country_iso.items()}
 
 layout = html.Div([
-    html.H2("Singapore Total Trade Volume Map Viewer", style={"margin": "20px"}),
+    html.H2(
+        "Singapore Total Trade Volume Map Viewer",
+        style={"margin": "20px", "textAlign": "center"}),
 
     html.Div([  # Wrapper for rows
 
@@ -227,6 +229,7 @@ layout = html.Div([
         ], id='country-trend-container', style={'display': 'none'})
     ])
 ])
+
 
 app = get_app()
 
@@ -450,20 +453,6 @@ def switch_to_prediction_tab(uploaded):
 )
 def render_tab_content(tab):
     global df_pred
-
-    if tab == "historical":
-        return html.Div([
-            html.Div(style={'marginTop': '20px'}),
-            html.H5(id="sector-title2", className="text-center mb-2"),
-        ])
-
-    elif tab == "prediction":
-        return html.Div([
-            html.Div(style={'marginTop': '20px'}),
-            html.H5(id="sector-title2", className="text-center mb-2"),
-        ])
-
-
 
 app.layout = layout
 register_callbacks(app)
