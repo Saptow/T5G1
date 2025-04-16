@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
+# copy app code (to immediately deploy backend)
 COPY . .
 
 # Set environment variable to avoid warning
