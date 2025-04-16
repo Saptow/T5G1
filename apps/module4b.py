@@ -62,14 +62,15 @@ app = get_app()
 
 # Layout
 layout = html.Div([
-    html.H4("Geopolitical Distance vs. Total Trade Over Time", className="mb-4"),
+    html.H2("How have geopolitical relations and trade dependence between economies evolved over time?"),
 
+    html.H5("Explore how an economy's trade flow with its trading partner has changed with respect to their geopolitical distance."),
 
     html.Div([
 
     dbc.Row([
     dbc.Col([
-        html.Label("Select Reporter Country:", className="fw-semibold mb-1"),
+        html.Label("Select Economy:", className="fw-semibold mb-1"),
         dcc.Dropdown(
             id="reporter-selector",
             options=[{"label": c, "value": c} for c in COUNTRY_LIST],
@@ -80,7 +81,7 @@ layout = html.Div([
     ], width=6),  # Adjust width if needed
 
     dbc.Col([
-        html.Label("Select Partner Country:", className="fw-semibold mb-1"),
+        html.Label("Select Trading Partner:", className="fw-semibold mb-1"),
         dcc.Dropdown(
             id="partner-selector",
             options=[{"label": c, "value": c} for c in COUNTRY_LIST],
@@ -108,12 +109,12 @@ layout = html.Div([
     #     style={"width": "300px"}
     #     ),
 
-    html.Label("Trade Type:"),
+    html.Label("Select Direction of Trade:", className="mb-3"),
     dbc.ButtonGroup([
         dbc.Button("Total Trade", id="btn-total4b", n_clicks=0, color="primary", outline=True),
         dbc.Button("Exports", id="btn-export4b", n_clicks=0, outline=True),
         dbc.Button("Imports", id="btn-import4b", n_clicks=0, outline=True)
-    ], className="fw-semibold mb-1"),
+    ], className="mb-3"),
 
     dcc.Store(id="selected-trade-type", data="total")
     ]),

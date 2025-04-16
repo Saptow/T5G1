@@ -9,6 +9,7 @@ import dash
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
+# Load historical data
 data = pd.read_csv('FBIC_sentiment_comtrade_un.csv') 
 
 # Convert to DataFrame
@@ -84,7 +85,15 @@ def get_filtered_countries(df, reporter_country, num_countries, order, metric, s
 # === Main Layout (Graph only) ===
 layout = html.Div([
 
-    html.H1("Geopolitical Distance vs. Total Trade By Year"),
+    html.H2("How does an economy's trade balance with its trading partners compare against their geopolitical alignment?"),
+
+    html.H5("Explore how an economy's trade balance and geopolitical alignment varies across different trading partners."),
+
+    html.H6("""
+In this visualisation, we assess geopolitical alignment between trading partners using UN voting records. 
+Following a method by Bailey et al. (2017), each country’s political stance is estimated annually, 
+and the distance between these positions reflects how closely aligned two countries are — greater distance means less alignment.
+""", className="text-muted ms-2"),
 
     html.Div([
 
@@ -100,7 +109,7 @@ layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Label("Select Reporter Country:"),
+            html.Label("Select Economy:"),
             dcc.Dropdown(
                 id='reporter-selector',
                 options=[{'label': country, 'value': country} for country in sorted(df["CountryA"].unique())],
@@ -111,7 +120,7 @@ layout = html.Div([
         ], className="me-3", style={"width": "49%", "display": "inline-block"}),
 
         html.Div([
-            html.Label("Select Partner Countries:"),
+            html.Label("Select Trading Partners:"),
             dcc.Dropdown(
                 id='country-selector',
                 options=[{'label': country, 'value': country} for country in sorted(df["CountryB"].unique())],
@@ -123,7 +132,7 @@ layout = html.Div([
     ], className="mb-3"
     ),
 
-    html.Label("View Top N Countries (Clear Select Partner Countries first):"),
+    html.Label("Move slider to select the top N trading partners to be visualised below (Clear the Select Trading Partners filter first):"),
     dcc.Slider(
         id='num-countries',
         min=0,
@@ -138,7 +147,7 @@ layout = html.Div([
     dbc.Row([
     dbc.Col(
         html.Div([
-            html.Label("Trade Order Criterion:", className="me-2"),
+            html.Label("Select Magnitude:", className="me-2"),
             dbc.ButtonGroup(
                 [
                     dbc.Button("Smallest", id="btn-smallest", n_clicks=0, color="secondary", outline=True),
@@ -151,7 +160,7 @@ layout = html.Div([
     ),
     dbc.Col(
         html.Div([
-            html.Label("Trade Metric:", className="me-2"),
+            html.Label("Select Category:", className="me-2"),
             dbc.ButtonGroup(
                 [
                     dbc.Button("Geopolitical Distance", id="btn-distance", n_clicks=0, color = "primary", outline=True),
@@ -161,7 +170,7 @@ layout = html.Div([
                 id="metric-btn-group"
             ),
             html.Small(
-                "Trade metric selection is fixed to 'Geopolitical Distance' when order is 'Smallest'",
+                "Category is fixed to 'Geopolitical Distance' when order is 'Smallest'",
                 className="text-muted fst-italic ms-2")
         ], id="metric-group-div"),
         width=6
@@ -370,7 +379,7 @@ def update_graph(reporter_country, selected_countries, num_countries, order, met
         text = "Bubble size: Reporter’s total trade value with trading partner. " \
         "White circle: Reporter’s trade balance with the trading partner.",
         showarrow=False,
-        font=dict(size=14, color="black"),
+        font=dict(size=14),
         bgcolor="white"
     )
 
@@ -481,7 +490,14 @@ def render_tab_content(tab):
             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
 
+# Load prediction data
+prediction_df = pd.read_csv("sample_2026.csv")
+prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
 
+# Merge historical and prediction data
+# df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
+# df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
 
 # layout = html.Div([
 #     html.H1("Singapore's Trade Balance vs Geopolitical Distance in 2022"),
