@@ -72,27 +72,27 @@ country_iso = df[['Country', 'Country Code']].drop_duplicates().set_index('Count
 iso_to_country = {v: k for k, v in country_iso.items()}
 
 layout = html.Div([
-    html.H2(
-        "Singapore Trade Map Viewer",
-        style={"margin": "20px", "textAlign": "center"}
-    ),
+    html.H1(
+        "Who are Singapore's top trading partners by sector and trade value?", className="mb-4"),
+
+    html.H5("Explore how Singapore’s trade relationships evolved over time."),
 
     # ==== Row 1 ====
     html.Div([
         dcc.Store(id="input-uploaded", storage_type="session"),
         # Year Mode Toggle
         html.Div([
-            html.Label("Year Mode:"),
+            html.Label("Year Filter:"),
             html.Div([
-                html.Span("Base Year Only", style={"marginRight": "10px"}),
+                html.Span("Select A Year", style={"marginRight": "10px"}),
                 daq.BooleanSwitch(id='compare-toggle', on=True, color="#000000"),
-                html.Span("Compare Years", style={"marginLeft": "10px"})
+                html.Span("Compare Across Two Years", style={"marginLeft": "10px"})
             ], style={"display": "flex", "alignItems": "center", "gap": "10px"})
         ]),
 
         # Base Year Dropdown
         html.Div([
-            html.Label("Select Base Year:"),
+            html.Label("Select Start Year:"),
             dcc.Dropdown(
                 id='base-year',
                 options=[{'label': str(y), 'value': y} for y in years],
@@ -103,7 +103,7 @@ layout = html.Div([
 
         # Compare Year Dropdown
         html.Div([
-            html.Label("Select Year to Compare:"),
+            html.Label("Select End Year:"),
             dcc.Dropdown(
                 id='compare-year',
                 options=[{'label': str(y), 'value': y} for y in years],
@@ -114,13 +114,13 @@ layout = html.Div([
 
         # Trade Type Dropdown
         html.Div([
-            html.Label("Trade Type:"),
+            html.Label("Direction of Trade:"),
             dcc.Dropdown(
                 id='trade-type-dropdown',
                 options=[
-                    {'label': 'Total Trade Volume', 'value': 'total'},
-                    {'label': 'Export Volume', 'value': 'export'},
-                    {'label': 'Import Volume', 'value': 'import'}
+                    {'label': 'Total Trade', 'value': 'total'},
+                    {'label': 'Exports', 'value': 'export'},
+                    {'label': 'Imports', 'value': 'import'}
                 ],
                 value='total',
                 style={"width": "250px"}
@@ -133,7 +133,7 @@ layout = html.Div([
             dcc.Dropdown(
                 id='metric-toggle',
                 options=[
-                    {'label': 'Change in Volume', 'value': 'Change'},
+                    {'label': 'Change in Trade Value', 'value': 'Change'},
                     {'label': '% Change from Base Year', 'value': 'Percent Change'}
                 ],
                 value='Change',
@@ -145,16 +145,16 @@ layout = html.Div([
     # ==== Row 2 ====
     html.Div([
         html.Div([
-            html.Label("Country Mode:"),
+            html.Label("Economy Filter:"),
             html.Div([
-                html.Span("Custom Countries", style={"marginRight": "10px"}),
+                html.Span("Select Trading Partners", style={"marginRight": "10px"}),
                 daq.BooleanSwitch(id='use-topn-toggle', on=True, color="#000000"),
-                html.Span("Top N", style={"marginLeft": "10px"})
+                html.Span("Filter by Top N", style={"marginLeft": "10px"})
             ], style={"display": "flex", "alignItems": "center", "gap": "10px"})
         ]),
 
         html.Div([
-            html.Label("Top N Range:"),
+            html.Label("Move slider to select the top N trading partners to be visualised below:"),
             dcc.RangeSlider(
                 id='topn-range-slider',
                 min=0,
@@ -168,7 +168,7 @@ layout = html.Div([
         ], id="topn-container", style={"width": "400px", "paddingTop": "10px"}),
 
         html.Div([
-            html.Label("Select Countries:"),
+            html.Label("Select Trading Partners:"),
             dcc.Dropdown(
                 id='country-filter',
                 options=[{'label': c, 'value': c} for c in countries],

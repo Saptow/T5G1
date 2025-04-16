@@ -151,11 +151,12 @@ layout = html.Div([
     dcc.Store(id="trade-type-select1b", data='total'),
     dcc.Store(id="display-type1b", data='percentage'),
 
-    html.H1("Countries' Trade Breakdown by Sector", className="text-center mb-4", style={'color': '#2c3e50'}),
+    html.H1("What are the key sectors driving an economy's trade?", className="mb-4", style={'color': '#2c3e50'}),
+    html.H5("Explore what an economy exports to and imports from its trading partner."),
 
     html.Div([
         html.Div([
-            html.Label("Select a Country", className="form-label fw-semibold mb-1"),
+            html.Label("Select Economy:", className="form-label fw-semibold mb-1"),
             dcc.Dropdown(
                 id='country-select1b',
                 options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
@@ -167,7 +168,7 @@ layout = html.Div([
         ], className="col-md-6"),
 
         html.Div([
-            html.Label("Partner Country", className="form-label fw-semibold mb-1"),
+            html.Label("Select Trading Partner:", className="form-label fw-semibold mb-1"),
             dcc.Dropdown(
                 id='country-select-alt21b',
                 style={"color": "black", "backgroundColor": "white", "width": "100%"},
@@ -180,21 +181,21 @@ layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Label("Trade Type", className="form-label fw-semibold mb-1"),
+            html.Label("Select Direction of Trade:", className="form-label fw-semibold mb-1"),
             html.Div([
                 html.Div([
                     dbc.ButtonGroup([
-                        dbc.Button("Trade Volume", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                        dbc.Button("Total Trade", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
                         dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
                         dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
                     ], className='w-100')
                 ], className="col-md-9"),
 
                 html.Div([
-                    html.Label("Display Type", className="form-label fw-semibold mb-1"),
+                    html.Label("Select Visualisation Type", className="form-label fw-semibold mb-1"),
                     daq.ToggleSwitch(
                         id='toggle-display1b',
-                        label='Volume / Percentage Share',
+                        label='Bar Chart / Tree Map',
                         value=True,
                         className="mt-1",
                         size=60
@@ -826,7 +827,7 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
 
     sector_agg = calculate_percentages(view, 'sector', latest_year, prev_year)
 
-    display_trade_type = "Trade Volume" if trade_type == "total" else trade_type.capitalize()
+    display_trade_type = "Trade Value" if trade_type == "total" else trade_type.capitalize()
     is_prediction = tab == "prediction"
     title_prefix = "Predicted " if is_prediction else ""
     title_suffix = f"for {latest_year}" if is_prediction else f"in {latest_year}"

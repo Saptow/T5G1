@@ -883,28 +883,29 @@ layout = html.Div([
     dcc.Store(id="trade-type-select7abc", data='total'),
     dcc.Store(id="display-mode7abc", data='volume'),
 
-    html.H2("Sector Trade Trends Over Time", className="text-center mb-4"),
+    html.H1("How has an economy's trade in a sector evolved over time?", className="mb-4"),
+    html.H5("Track how an economy’s sectoral trade with a trading partner has changed over the years."),
 
     html.Div([
         html.Div([
-            html.Label("Select a Country", className="form-label fw-semibold mb-1"),
+            html.Label("Select Economy:", className="form-label fw-semibold mb-1"),
             dcc.Dropdown(
                 id='country-select7abc',
                 options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
                 value='Singapore',
-                placeholder='Select a Country',
+                placeholder='Select an Economy',
                 className="mb-3",
                 style={"width": "100%"}
             )
         ], className="col-md-6"),
 
         html.Div([
-            html.Label("Partner Country", className="form-label fw-semibold mb-1"),
+            html.Label("Select Trading Partner:", className="form-label fw-semibold mb-1"),
             dcc.Dropdown(
                 id='country-select-alt27abc',
                 value='Australia',
                 style={"color": "black", "backgroundColor": "white", "width": "100%"},
-                placeholder="Select partner country",
+                placeholder="Select a Trading Partner",
                 searchable=True,
                 className="mb-3")
         ], className="col-md-6")
@@ -932,19 +933,19 @@ layout = html.Div([
     # ], className="mb-4 d-flex flex-column align-items-center"),
     html.Div([
         html.Div([
-            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+            html.Label("Select Direction of Trade:", className="form-label fw-semibold mb-1 text-center w-100"),
             dbc.ButtonGroup([
-                dbc.Button("Trade Volume", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'}),
+                dbc.Button("Total Trade", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'}),
                 dbc.Button("Exports", id='btn-export7abc', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'}),
                 dbc.Button("Imports", id='btn-import7abc', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc', 'padding': '6px 20px', 'fontSize': '12px'})
             ], className='w-100')
         ], className="col-md-8"),
 
         html.Div([
-            html.Label("Display Mode", className="form-label fw-semibold mb-1 text-center w-100"),
+            html.Label("Select Visualisation Type", className="form-label fw-semibold mb-1 text-center w-100"),
             daq.ToggleSwitch(
                 id='toggle-display7abc',
-                label='Volume / Percentage Share',
+                label='Trade Value / Percentage Share',
                 value=True,
                 size=80
             )
