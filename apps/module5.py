@@ -11,83 +11,92 @@ import dash_daq as daq
 
 app = get_app()
 
-# === 1. LOAD AND TRANSFORM DATA ONCE ===
-df_raw = pd.read_csv("sample_2026.csv")
+def process_forecast_data(data):
+    """Process the forecast data from the dcc.Store component"""
+    # Convert the JSON data to DataFrame
+    df_raw = pd.DataFrame(data)
+    
+    # Apply the same transformations as before
+    # Map country codes
+    country_code_to_name = {c.alpha_3: c.name for c in pycountry.countries}
+    df_raw["Time Period"] = df_raw["scenario"].map({"forecast": "2026a", "postshock": "2026b"})
+    df_raw.rename(columns={
+        "country_a": "Reporter",
+        "country_b": "Partner",
+        "total_import_of_A_from_B": "Import Value",
+        "trade_volume": "Total Trade Volume"
+    }, inplace=True)
+    df_raw["Reporter"] = df_raw["Reporter"].map(country_code_to_name).fillna(df_raw["Reporter"])
+    df_raw["Partner"] = df_raw["Partner"].map(country_code_to_name).fillna(df_raw["Partner"])
+    df_raw["Export Value"] = df_raw["Total Trade Volume"] - df_raw["Import Value"]
 
-# Map country codes
-country_code_to_name = {c.alpha_3: c.name for c in pycountry.countries}
-df_raw["Time Period"] = df_raw["scenario"].map({"forecast": "2026a", "postshock": "2026b"})
-df_raw.rename(columns={
-    "country_a": "Reporter",
-    "country_b": "Partner",
-    "total_import_of_A_from_B": "Import Value",
-    "trade_volume": "Total Trade Volume"
-}, inplace=True)
-df_raw["Reporter"] = df_raw["Reporter"].map(country_code_to_name).fillna(df_raw["Reporter"])
-df_raw["Partner"] = df_raw["Partner"].map(country_code_to_name).fillna(df_raw["Partner"])
-df_raw["Export Value"] = df_raw["Total Trade Volume"] - df_raw["Import Value"]
+    # === 2. COUNTRY-LEVEL AGGREGATION ===
+    country_metrics = {}
+    for role, col_name in [("Reporter", "Reporter"), ("Partner", "Partner")]:
+        for metric, new_col in [
+            ("Total Trade Volume", f"{col_name} Total"),
+            ("Export Value", f"{col_name} Export"),
+            ("Import Value", f"{col_name} Import")
+        ]:
+            temp = df_raw.groupby([role, "Time Period"])[metric].sum().reset_index()
+            temp.rename(columns={role: "Reporter", metric: new_col}, inplace=True)
+            country_metrics[new_col] = temp
 
-# === 2. COUNTRY-LEVEL AGGREGATION ===
-country_metrics = {}
-for role, col_name in [("Reporter", "Reporter"), ("Partner", "Partner")]:
-    for metric, new_col in [
-        ("Total Trade Volume", f"{col_name} Total"),
-        ("Export Value", f"{col_name} Export"),
-        ("Import Value", f"{col_name} Import")
-    ]:
-        temp = df_raw.groupby([role, "Time Period"])[metric].sum().reset_index()
-        temp.rename(columns={role: "Reporter", metric: new_col}, inplace=True)
-        country_metrics[new_col] = temp
+    combined_df = country_metrics["Reporter Total"]
+    for key in list(country_metrics.keys())[1:]:
+        combined_df = combined_df.merge(country_metrics[key], on=["Reporter", "Time Period"], how="outer")
 
-combined_df = country_metrics["Reporter Total"]
-for key in list(country_metrics.keys())[1:]:
-    combined_df = combined_df.merge(country_metrics[key], on=["Reporter", "Time Period"], how="outer")
+    combined_df.fillna(0, inplace=True)
+    combined_df["Total Trade Volume"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
+    combined_df["Export Value"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
+    combined_df["Import Value"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
 
-combined_df.fillna(0, inplace=True)
-combined_df["Total Trade Volume"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
-combined_df["Export Value"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
-combined_df["Import Value"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
+    pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade Volume", "Export Value", "Import Value"])
+    percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)*100
+    percent_change.reset_index(inplace=True)
 
-pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade Volume", "Export Value", "Import Value"])
-percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)*100
-percent_change.reset_index(inplace=True)
+    # === 3. SECTOR-LEVEL TRANSFORMATION ===
+    import_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_import" in c]
+    export_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_export" in c]
 
+    export_melted = df_raw[["Reporter", "Time Period"] + export_cols].melt(
+        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Export Value"
+    )
+    export_melted["Sector Group"] = "Sector " + export_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
 
-# === 3. SECTOR-LEVEL TRANSFORMATION ===
-import_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_import" in c]
-export_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_export" in c]
+    import_melted = df_raw[["Reporter", "Time Period"] + import_cols].melt(
+        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Import Value"
+    )
+    import_melted["Sector Group"] = "Sector " + import_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
 
-export_melted = df_raw[["Reporter", "Time Period"] + export_cols].melt(
-    id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Export Value"
-)
-export_melted["Sector Group"] = "Sector " + export_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
+    sector_df = pd.merge(
+        export_melted[["Reporter", "Time Period", "Sector Group", "Export Value"]],
+        import_melted[["Reporter", "Time Period", "Sector Group", "Import Value"]],
+        on=["Reporter", "Time Period", "Sector Group"],
+        how="outer"
+    )
+    sector_df.fillna(0, inplace=True)
+    sector_df["Total Trade Volume"] = sector_df["Export Value"] + sector_df["Import Value"]
 
-import_melted = df_raw[["Reporter", "Time Period"] + import_cols].melt(
-    id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Import Value"
-)
-import_melted["Sector Group"] = "Sector " + import_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
+    df_2026a = sector_df[sector_df["Time Period"] == "2026a"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
+    df_2026b = sector_df[sector_df["Time Period"] == "2026b"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
 
-sector_df = pd.merge(
-    export_melted[["Reporter", "Time Period", "Sector Group", "Export Value"]],
-    import_melted[["Reporter", "Time Period", "Sector Group", "Import Value"]],
-    on=["Reporter", "Time Period", "Sector Group"],
-    how="outer"
-)
-sector_df.fillna(0, inplace=True)
-sector_df["Total Trade Volume"] = sector_df["Export Value"] + sector_df["Import Value"]
+    df_2026a.columns = [c + "_2026a" for c in df_2026a.columns]
+    df_2026b.columns = [c + "_2026b" for c in df_2026b.columns]
 
-df_2026a = sector_df[sector_df["Time Period"] == "2026a"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
-df_2026b = sector_df[sector_df["Time Period"] == "2026b"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
+    df_merged = df_2026a.join(df_2026b, how="inner").reset_index()
 
-df_2026a.columns = [c + "_2026a" for c in df_2026a.columns]
-df_2026b.columns = [c + "_2026b" for c in df_2026b.columns]
+    for col in ["Export Value", "Import Value", "Total Trade Volume"]:
+        df_merged[f"{col}"] = (
+            (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"].replace(0, 1)
+        ) * 100
+        
+    return {
+        'df_raw': df_raw.to_dict('records'),
+        'percent_change': percent_change.to_dict('records'),
+        'df_merged': df_merged.to_dict('records')
+    }
 
-df_merged = df_2026a.join(df_2026b, how="inner").reset_index()
-
-for col in ["Export Value", "Import Value", "Total Trade Volume"]:
-    df_merged[f"{col}"] = (
-        (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"].replace(0, 1)
-    ) * 100
 
 
 # for col in ["Export", "Import", "Trade"]:
@@ -98,7 +107,7 @@ for col in ["Export Value", "Import Value", "Total Trade Volume"]:
 layout = html.Div([
 
     dcc.Store(id="view-toggle", data='country'),
-
+    dcc.Store(id='processed-data',data=None),
     html.Div([  
         # === OVERLAY (Positioned absolutely within this container) ===
         html.Div(
@@ -177,15 +186,26 @@ layout = html.Div([
     ], style={"position": "relative"})  
 ])
 
+# Add a callback to process the forecast data and store the results
+@app.callback(
+    Output("processed-data", "data"),
+    Input("forecast-data", "data")
+)
+def process_data(data):
+    if data is None or data == {}:
+        # Return default data or empty structure
+        return None
+    
+    # Process the real forecast data
+    return process_forecast_data(data)
 
-# Callback to control overlay visibility
-
+# Callback to control overlay visibility - now depends on processed-data instead of uploaded-url
 @app.callback(
     Output("page-overlay", "style"),
-    Input("uploaded-url", "data")
+    Input("processed-data", "data")
 )
-def toggle_overlay(news_url_data):
-    if news_url_data:
+def toggle_overlay(processed_data):
+    if processed_data:
         return {"display": "none"}  
     return {
         "position": "absolute",
@@ -222,9 +242,16 @@ def render_tab(tab):
     Output("filter-dropdown", "options"),
     Output("filter-dropdown", "placeholder"),
     Output("filter-dropdown", "value"),
-    Input("view-toggle-switch", "on")
+    Input("view-toggle-switch", "on"),
+    Input("processed-data", "data")
 )
-def update_dropdown_options(is_country_view):
+def update_dropdown_options(is_country_view, processed_data):
+    if not processed_data:
+        return [], "", None
+        
+    # Convert dictionary back to DataFrame
+    df_merged = pd.DataFrame(processed_data['df_merged'])
+    
     if is_country_view:
         options = [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())]
         return options, "Choose a specific country", options[0]["value"] if options else None
@@ -235,27 +262,32 @@ def update_dropdown_options(is_country_view):
         return options, "Choose a specific sector", default_value
 
 
-def update_button_style(n_country, n_sector):
-    ctx = callback_context
-    if not ctx.triggered:
-        raise dash.exceptions.PreventUpdate
-    clicked = ctx.triggered[0]["prop_id"].split(".")[0]
+# def update_button_style(n_country, n_sector):
+#     ctx = callback_context
+#     if not ctx.triggered:
+#         raise dash.exceptions.PreventUpdate
+#     clicked = ctx.triggered[0]["prop_id"].split(".")[0]
 
-    if clicked == "btn-country":
-        return "active", "inactive", [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())], "Choose a specific country", None
-    else:
-        return "inactive", "active", [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())], "Choose a specific sector", None
+#     if clicked == "btn-country":
+#         return "active", "inactive", [{"label": c, "value": c} for c in sorted(df_merged["Reporter"].unique())], "Choose a specific country", None
+#     else:
+#         return "inactive", "active", [{"label": s, "value": s} for s in sorted(df_merged["Sector Group"].unique())], "Choose a specific sector", None
 
+# Update dumbbell chart callback to use processed-data
 @app.callback(
     Output("dumbbell-graph", "figure"),
     Input("filter-dropdown", "value"),
     Input("trade-type-dropdown", "value"),
-    Input("view-toggle-switch", "on")  # this returns True (country options in dropdown2) or False (sector options in dropdown2)
+    Input("view-toggle-switch", "on"),
+    Input("processed-data", "data")
 )
-def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
-    if not selected_filter or not trade_type:
+def update_dumbbell_chart(selected_filter, trade_type, is_country_view, processed_data):
+    if not processed_data or not selected_filter or not trade_type:
         raise dash.exceptions.PreventUpdate
 
+    # Convert dictionary back to DataFrame
+    df_merged = pd.DataFrame(processed_data['df_merged'])
+    
     change_col = f"{trade_type}"
     df_plot = df_merged.copy()
 
@@ -316,15 +348,22 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view):
     )
     return fig
 
-
 # === RANKING CALLBACK ===
 @app.callback(
     Output("percent-change-bar", "figure"),
     Input("filter-dropdown", "value"),
     Input("trade-type-dropdown", "value"),
-    Input("view-toggle-switch", "on")  # this returns True (country) or False (sector)
+    Input("view-toggle-switch", "on"),
+    Input("processed-data", "data")
 )
-def update_ranking_chart(selected_filter, trade_type, is_country_view):
+def update_ranking_chart(selected_filter, trade_type, is_country_view, processed_data):
+    if not processed_data:
+        raise dash.exceptions.PreventUpdate
+        
+    # Convert dictionaries back to DataFrames
+    df_merged = pd.DataFrame(processed_data['df_merged'])
+    percent_change = pd.DataFrame(processed_data['percent_change'])
+    
     if not is_country_view:
         if not selected_filter:
             df_sorted = percent_change.sort_values(by=trade_type, ascending=False)

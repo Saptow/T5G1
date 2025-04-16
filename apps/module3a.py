@@ -576,30 +576,30 @@ sidebar_controls = html.Div([])
 
 ### INSERT PREDICTION TAB CODE AND DATA MANGLING HERE
 
-# === PREDICTION DATA PREPARATION ===
-new_df = pd.read_csv('sample_2026.csv')
+# # === PREDICTION DATA PREPARATION ===
+# new_df = pd.read_csv('sample_2026.csv')
 
 # Get only latest year from historical data
 historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
 
-new_df = new_df[new_df['scenario'] == 'postshock'].copy()
-new_df.drop(columns=['scenario'], inplace=True)
+# new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+# new_df.drop(columns=['scenario'], inplace=True)
 
-# Step 2: Ensure column alignment
-new_df = new_df[historical_latest.columns]
+# # Step 2: Ensure column alignment
+# new_df = new_df[historical_latest.columns]
 
-# Step 3: Ensure all numeric columns are converted
-for col in new_df.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+# # Step 3: Ensure all numeric columns are converted
+# for col in new_df.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
 
-for col in historical_latest.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+# for col in historical_latest.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
 
-# Merge the two datasets
-merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
-merged_prediction_df = merged_prediction_df.round(2)
+# # Merge the two datasets
+# merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+# merged_prediction_df = merged_prediction_df.round(2)
 
 
 # Commenting Out
@@ -793,75 +793,44 @@ merged_prediction_df = merged_prediction_df.round(2)
     Input('country-select1b', 'value'),
     Input('trade-type-select1b', 'data'),
     Input('country-select-alt21b', 'value'),
-    Input('module1b-tabs', 'value')
+    Input('module1b-tabs', 'value'),
+    Input('forecast-data', 'data')  # Add this input
 )
-def update_all_visualizations(selected_country, trade_type, selected_partner, tab):
+def update_all_visualizations(selected_country, trade_type, selected_partner, tab, forecast_data):
     if tab == 'prediction':
-        data_source = merged_prediction_df
+        # Instead of reading from CSV, use the stored forecast data
+        if forecast_data:
+            # Convert the stored JSON data back to a DataFrame
+            new_df = pd.DataFrame(forecast_data)
+            
+            # Apply any necessary transformations similar to what you did with the CSV data
+            new_df = new_df[new_df['scenario'] == 'postshock'].copy() if 'scenario' in new_df.columns else new_df
+            if 'scenario' in new_df.columns:
+                new_df.drop(columns=['scenario'], inplace=True)
+            
+            # Ensure column alignment with historical data
+            common_columns = list(set(new_df.columns).intersection(set(historical_latest.columns)))
+            new_df = new_df[common_columns]
+            
+            # Convert numeric columns
+            for col in new_df.columns:
+                if col not in ['country_a', 'country_b', 'year']:
+                    new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+            
+            # Merge with historical data
+            merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+            merged_prediction_df = merged_prediction_df.round(2)
+            
+            data_source = merged_prediction_df
+        else:
+            # If no forecast data available, fall back to historical
+            data_source = df
     else:
         data_source = df
 
+    # Rest of the visualization code remains the same
     country_id = COUNTRY_NAMES[selected_country]
-
+    
     # Filter data: always treat selected_country as A
     filtered = data_source[data_source['country_a'] == country_id].copy()
     filtered['partner_country'] = filtered['country_b'].map(COUNTRY_LABELS)
-
-    partner_options = [
-        {'label': name, 'value': name}
-        for name in sorted(filtered['partner_country'].unique())
-        if name != selected_country
-    ]
-
-    if selected_partner:
-        partner_id = COUNTRY_NAMES[selected_partner]
-        view = filtered[filtered['country_b'] == partner_id]
-    else:
-        view = filtered
-
-    latest_year = view['year'].max()
-    prev_year = view['year'][view['year'] < latest_year].max()
-
-    view.attrs['trade_type'] = trade_type
-
-    sector_agg = calculate_percentages(view, 'sector', latest_year, prev_year)
-
-    display_trade_type = "Trade Volume" if trade_type == "total" else trade_type.capitalize()
-    is_prediction = tab == "prediction"
-    title_prefix = "Predicted " if is_prediction else ""
-    title_suffix = f"for {latest_year}" if is_prediction else f"in {latest_year}"
-
-    if selected_partner:
-        title = f"{title_prefix}{display_trade_type} from {selected_country} to {selected_partner} by Sector {title_suffix}"
-    else:
-        title = f"{title_prefix}{selected_country}'s {display_trade_type} by Sector {title_suffix}"
-
-    sector_agg['percentage'] = sector_agg['percentage'].round(1)
-    sector_agg['change_str'] = sector_agg['change'].apply(lambda x: f"{x:+.2f}%")
-    sector_agg['previous_pct'] = sector_agg['previous_volume'] / sector_agg['previous_volume'].sum() * 100
-    sector_agg['previous_pct_str'] = sector_agg['previous_pct'].round(1).astype(str) + '%'
-
-    max_change = sector_agg['change'].abs().max() * 5
-
-    hover_template = (
-        '<b>%{label}</b><br>'
-        'Current Share (' + str(latest_year) + '): %{customdata[0]}<br>'
-        'Previous Share (' + str(prev_year) + '): %{customdata[1]}<br>'
-        'Change in Percentage Share: %{customdata[2]}'
-    )
-
-    fig_treemap = px.treemap(
-        sector_agg, path=['sector'], values='percentage', color='change_clipped',
-        color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-        range_color=[-max_change, max_change], color_continuous_midpoint=0,
-        custom_data=['percentage', 'previous_pct_str', 'change_str']
-    )
-    fig_treemap.update_traces(
-        hovertemplate=hover_template,
-        texttemplate='<b>%{label}</b><br>%{customdata[0]} (%{customdata[2]})'
-    )
-    fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
-
-    fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
-
-    return fig_treemap, fig_bar, partner_options, title
