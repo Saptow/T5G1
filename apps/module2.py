@@ -6,10 +6,71 @@ import dash_bootstrap_components as dbc
 import dash
 import dash_daq as daq
 
-# Load and prepare data
-df = pd.read_csv("priscilla_worldmap_data.csv")
+from dash import Dash, dcc, html, Input, Output, State, callback_context, get_app
+from dash.exceptions import PreventUpdate
+import plotly.express as px
+import pandas as pd
+import dash_bootstrap_components as dbc
+import dash
+import dash_daq as daq
+import pycountry
+
+# === Load and clean data ===
+
+SECTOR_LABELS = {
+    "bec_1": "Food and Agriculture",
+    "bec_2": "Energy and Mining",
+    "bec_3": "Construction and Housing",
+    "bec_4": "Textile and Footwear",
+    "bec_5": "Transport and Travel",
+    "bec_6": "ICT and Business",
+    "bec_7": "Health and Education",
+    "bec_8": "Government and Others"
+}
+
+COUNTRY_COORDS = {
+    "ARE": (23.4241, 53.8478),
+    "AUS": (-25.2744, 133.7751),
+    "CHE": (46.8182, 8.2275),
+    "CHN": (35.8617, 104.1954),
+    "DEU": (51.1657, 10.4515),
+    "FRA": (46.6034, 1.8883),
+    "HKG": (22.3193, 114.1694),
+    "IDN": (-0.7893, 113.9213),
+    "IND": (20.5937, 78.9629),
+    "JPN": (36.2048, 138.2529),
+    "KOR": (35.9078, 127.7669),
+    "MYS": (4.2105, 101.9758),
+    "NLD": (52.1326, 5.2913),
+    "PHL": (12.8797, 121.7740),
+    "SGP": (1.3521, 103.8198),
+    "THA": (15.8700, 100.9925),
+    "USA": (37.0902, -95.7129),
+    "VNM": (14.0583, 108.2772)
+}
+
+df_raw = pd.read_csv("data/final/historical_data.csv")
+df_raw['Country Code'] = df_raw['country_b']
+df_raw['Country'] = df_raw['Country Code'].apply(lambda code: pycountry.countries.get(alpha_3=code).name if pycountry.countries.get(alpha_3=code) else code)
+df_raw['Year'] = df_raw['year']
+df_raw['Lat'] = df_raw['Country Code'].map(lambda code: COUNTRY_COORDS.get(code, (None, None))[0])
+df_raw['Lon'] = df_raw['Country Code'].map(lambda code: COUNTRY_COORDS.get(code, (None, None))[1])
+
+records = []
+for sector, name in SECTOR_LABELS.items():
+    export_col = f"{sector}_export_A_to_B"
+    import_col = f"{sector}_import_A_from_B"
+    temp = df_raw[['Year', 'Country', 'Country Code', 'Lat', 'Lon', export_col, import_col]].copy()
+    temp['Sector'] = name
+    temp['Export Volume'] = temp[export_col]
+    temp['Import Volume'] = temp[import_col]
+    temp['Total Volume'] = temp['Export Volume'] + temp['Import Volume']
+    records.append(temp[['Year', 'Country', 'Country Code', 'Lat', 'Lon', 'Sector', 'Export Volume', 'Import Volume', 'Total Volume']])
+
+df = pd.concat(records, ignore_index=True)
 df["Net Exports"] = df["Export Volume"] - df["Import Volume"]
 
+# === Set up dropdown values ===
 years = sorted(df['Year'].unique())
 countries = sorted(df['Country'].unique())
 sectors = sorted(df['Sector'].unique())
