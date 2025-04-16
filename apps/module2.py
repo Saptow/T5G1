@@ -82,7 +82,7 @@ iso_to_country = {v: k for k, v in country_iso.items()}
 
 layout = html.Div([
     html.H2(
-        "Singapore Total Trade Volume Map Viewer",
+        "Singapore Trade Map Viewer",
         style={"margin": "20px", "textAlign": "center"}),
 
     html.Div([  # Wrapper for rows
@@ -397,9 +397,13 @@ def register_callbacks(app):
     Output("prediction-tab2", "disabled"),
     Output("base-year", "options"),
     Output("compare-year", "options"),
+    Output("base-year", "value"),
+    Output("compare-year", "value"),
+    Output("compare-toggle", "on"),  # <== NEW: toggle compare on
     Input("input-uploaded", "data"),
     prevent_initial_call=True
 )
+
 def handle_prediction_upload(uploaded):
     global df_pred, years
 
@@ -434,7 +438,7 @@ def handle_prediction_upload(uploaded):
     updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
     options = [{'label': str(y), 'value': y} for y in updated_years]
 
-    return False, options, options
+    return False, options, options, 2026, 2026, True
 
 
 @app.callback(
