@@ -103,7 +103,7 @@ layout = html.Div([
                 dcc.Dropdown(
                     id='base-year',
                     options=[{'label': str(y), 'value': y} for y in years],
-                    value=2022,
+                    value=2023,
                     style={"width": "250px"}
                 )
             ]),
@@ -153,7 +153,7 @@ layout = html.Div([
                     id='topn-range-slider',
                     min=0,
                     max=len(countries),
-                    value=[0, 0],
+                    value=[0, 5],
                     marks={i: str(i) for i in range(0, len(countries)+1)},
                     step=1,
                     tooltip={"placement": "bottom"}
@@ -187,31 +187,43 @@ layout = html.Div([
     ], style={"margin": "20px"}),  # Close wrapper
 
     html.Div([
-        dcc.Tabs(id='chart-tabs', value='line', children=[
-            dcc.Tab(label='Line Chart', value='line'),
-            dcc.Tab(label='Bar Chart', value='bar'),
+        dcc.Tabs(id="module2-tabs", value="historical", children=[
+            dcc.Tab(label="Historical", value="historical"),
+            dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
         ]),
-        dcc.Graph(id='country-trend')
-    ], id='country-trend-container', style={'display': 'none'}),
-
-    html.Button("Return to map", id="close-button", n_clicks=0,
-                style={'display': 'none', 'position': 'fixed', 'top': '10px', 'right': '10px', 'zIndex': '9999',
-                       "color": "black", "backgroundColor": "white"}),
-
-    html.Div(id="tab-warning2", className="text-danger mb-2 text-center"),
-
-    dcc.Tabs(id="module2-tabs", value="historical", children=[
-        dcc.Tab(label="Historical", value="historical"),
-        dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
-    ]),
-
-    html.Div(id="module2-tabs-container"),
-    html.Div(id="module2-tab-content", className="mt-3"),
+        html.Div(id="module2-tabs-container"),
+        html.Div(id="module2-tab-content", className="mt-3")
+        ]),
 
     html.Div([
-        html.Div(id='sector-title2', style={'display': 'none'}),
-        dcc.Graph(id='map-heatmap', style={'display': 'none'}),
-    ], style={'display': 'none'})
+        # Map container
+        html.Div([
+            dcc.Graph(id='map-heatmap')
+        ], id='map-container', style={'display': 'block'}),
+
+        # Trend container
+        html.Div([
+            dcc.Tabs(id='chart-tabs', value='line', children=[
+                dcc.Tab(label='Line Chart', value='line'),
+                dcc.Tab(label='Bar Chart', value='bar'),
+            ]),
+            dcc.Graph(id='country-trend'), 
+            html.Div([
+                html.Button("Return to map", id="close-button", n_clicks=0,
+                            style={
+                            'marginTop': '15px',
+                            'padding': '10px 20px',
+                            'backgroundColor': '#f0f0f0',  # light grey
+                            'border': '1px solid #ccc',
+                            'borderRadius': '5px',
+                            'cursor': 'pointer',
+                            'fontWeight': 'bold',
+                            'boxShadow': '1px 1px 3px rgba(0,0,0,0.1)'
+                        }
+                    )
+            ], style={'textAlign': 'left'})
+        ], id='country-trend-container', style={'display': 'none'})
+    ])
 ])
 
 app = get_app()
@@ -316,25 +328,25 @@ def register_callbacks(app):
         return {"display": "none"}, {"paddingBottom": "10px", "display": "block"}
 
     @app.callback(
-        Output('country-trend', 'figure'),
-        Output('country-trend-container', 'style'),
-        Output('map-heatmap', 'style'),
-        Output('close-button', 'style'),
-        Input('map-heatmap', 'clickData'),
-        Input('close-button', 'n_clicks'),
-        Input('chart-tabs', 'value')
-    )
+    Output('country-trend', 'figure'),
+    Output('country-trend-container', 'style'),
+    Output('map-container', 'style'),
+    Input('map-heatmap', 'clickData'),
+    Input('close-button', 'n_clicks'),
+    Input('chart-tabs', 'value')
+)
     def toggle_country_trend(clickData, close_clicks, chart_type):
         ctx = callback_context
+
         if ctx.triggered and ctx.triggered[0]['prop_id'] == 'close-button.n_clicks':
-            return px.line(title=""), {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+            return px.line(title=""), {'display': 'none'}, {'display': 'block'}
 
         if not clickData:
-            return px.line(title="Click on a country to see its trends"), {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+            return px.line(title="Click on a country to see its trends"), {'display': 'none'}, {'display': 'block'}
 
         iso = clickData['points'][0].get('location')
         if not iso or iso not in iso_to_country:
-            return px.line(title="Click on a country to see its trends"), {'display': 'none'}, {'display': 'block'}, {'display': 'none'}
+            return px.line(title="Click on a country to see its trends"), {'display': 'none'}, {'display': 'block'}
 
         country = iso_to_country[iso]
         country_df = df[df['Country'] == country].groupby('Year').agg({
@@ -345,17 +357,18 @@ def register_callbacks(app):
 
         if chart_type == 'line':
             fig = px.line(country_df, x='Year', y=['Total Volume', 'Export Volume', 'Import Volume'],
-                          markers=True, title=f"{country} Trade Volume Breakdown")
+                        markers=True, title=f"{country} Trade Volume Breakdown")
         else:
             melted = country_df.melt(id_vars='Year', value_vars=['Total Volume', 'Export Volume', 'Import Volume'],
-                                     var_name='Metric', value_name='Value')
+                                    var_name='Metric', value_name='Value')
             fig = px.bar(melted, x='Year', y='Value', color='Metric', barmode='group',
-                         title=f"{country} Trade Volume Breakdown")
+                        title=f"{country} Trade Volume Breakdown")
 
         fig.update_traces(hovertemplate='Year: %{x}<br>Value: %{y:.2f} Billion SGD<extra></extra>')
         fig.update_layout(yaxis_title="Billion SGD", legend_title="Metric")
 
-        return fig, {'display': 'block'}, {'display': 'none'}, {'display': 'block'}
+        return fig, {'display': 'block'}, {'display': 'none'}
+
 
 @app.callback(
     Output("prediction-tab2", "disabled"),
@@ -383,13 +396,13 @@ def render_tab_content(tab):
         return html.Div([
             html.Div(style={'marginTop': '20px'}),
             html.H5(id="sector-title2", className="text-center mb-2"),
-            dcc.Graph(id='map-heatmap', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
         ])
     elif tab == "prediction":
         return html.Div([
             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
+
 
 app.layout = layout
 register_callbacks(app)
