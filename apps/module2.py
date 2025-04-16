@@ -5,18 +5,9 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 import dash
 import dash_daq as daq
-
-from dash import Dash, dcc, html, Input, Output, State, callback_context, get_app
-from dash.exceptions import PreventUpdate
-import plotly.express as px
-import pandas as pd
-import dash_bootstrap_components as dbc
-import dash
-import dash_daq as daq
 import pycountry
 
 # === Load and clean data ===
-
 SECTOR_LABELS = {
     "bec_1": "Food and Agriculture",
     "bec_2": "Energy and Mining",
@@ -430,7 +421,7 @@ def register_callbacks(app):
     Output("compare-year", "options"),
     Output("base-year", "value"),
     Output("compare-year", "value"),
-    Output("compare-toggle", "on"),  # <== NEW: toggle compare on
+    Output("compare-toggle", "on"),  
     Input("input-uploaded", "data"),
     prevent_initial_call=True
 )
