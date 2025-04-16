@@ -58,6 +58,9 @@ df['CountryB'] = df['CountryB'].map(COUNTRY_LABELS)
 # Generate Surplus/Deficit Label
 df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
 
+# === Placeholder for future prediction data ===
+df_pred = None
+
 app = get_app()
 
 # Layout
@@ -167,7 +170,13 @@ def update_trade_type(n_total, n_export, n_import):
     Input("selected-trade-type", "data")
 )
 def update_geo_trade_chart(reporter, partner, trade_type):
-    filtered_df = df[(df["CountryA"] == reporter)].copy()
+    global df_pred
+
+    # If 2026 involved and df_pred exists → merge both
+    current_df = pd.concat([df, df_pred]) if df_pred is not None else df
+
+    # Filter by reporter country
+    filtered_df = current_df[(current_df["CountryA"] == reporter)].copy()
 
     # Determine correct column to use
     if trade_type == "export":
@@ -196,11 +205,6 @@ def update_geo_trade_chart(reporter, partner, trade_type):
     geo_avg_df = filtered_df.groupby("Year")["Geopolitical Distance"].mean().reset_index()
     geo_partner_df = partner_df.groupby("Year")["Geopolitical Distance"].mean().reset_index()
 
-    # filtered_df = df[(df["CountryA"] == reporter) & (df["CountryB"] == partner)]
-
-    # # Compute reporter's average geopolitical distance with all partners for each year
-    # avg_geo_df = df[df["CountryA"] == reporter].groupby("Year")["Geopolitical Distance"].mean().reset_index()
-
     # Dynamic Y-axis ranges
     geo_min = min(geo_avg_df["Geopolitical Distance"].min(), geo_partner_df["Geopolitical Distance"].min())
     geo_max = max(geo_avg_df["Geopolitical Distance"].max(), geo_partner_df["Geopolitical Distance"].max())
@@ -212,14 +216,22 @@ def update_geo_trade_chart(reporter, partner, trade_type):
     geo_range = [geo_min - 0.1, geo_max + 0.1]
     trade_range = [trade_min * 0.9, trade_max * 1.1]
 
+
     if filtered_df.empty:
         return go.Figure().update_layout(
             title="No data available for the selected country pair.",
             template="plotly_white"
         )
+    # # Convert years to strings
+    # combined["Year"] = combined["Year"].astype(str)
+    # geo_partner_df["Year"] = geo_partner_df["Year"].astype(str)
+    # geo_avg_df["Year"] = geo_avg_df["Year"].astype(str)
 
-    # Prepare custom data for hover text
-    #customdata = combined[["Geopolitical Distance","Exports", "Imports", "Trade Balance"]].values
+    #Conditional bar and line colours depending on value of year
+    # bar_colors = ["red" if str(year) == "2026" else "blue" for year in combined["Year"]]
+    bar_colors = ["red" if year > 2023 else "blue" for year in combined["Year"]]
+    solid_line_colors = ["red" if year > 2023 else "black" for year in combined["Year"]]
+    dotted_line_colors = ["red" if year > 2023 else "gray" for year in combined["Year"]]
 
     fig = go.Figure()
 
@@ -228,20 +240,12 @@ def update_geo_trade_chart(reporter, partner, trade_type):
         x=combined["Year"],
         y=combined["percentage"],
         name=f"{partner}'s Share of {reporter}'s {trade_col}",
-        marker_color="blue",
+        marker_color=bar_colors,
         opacity=0.5,
         yaxis="y2",
         hovertemplate=(
         "Trade Share: %{y:.2f}%<extra></extra>"
         )
-        #customdata=customdata,
-        # hovertemplate=(
-        #     "Geopolitical Distance: %{customdata[0]}<br>" +
-        #     "Total Trade: %{y}<br>" +
-        #     "Exports: %{customdata[1]}<br>" +
-        #     "Imports: %{customdata[2]}<br>" +
-        #     "Trade Balance: %{customdata[3]}<extra></extra>"
-        # )
     ))
 
     # Line for Geopolitical Distance (left Y-axis)
@@ -254,13 +258,6 @@ def update_geo_trade_chart(reporter, partner, trade_type):
         line=dict(width=3, color="black"),
         yaxis="y1",
         hovertemplate="Geopolitical Distance with Partner: %{y:.2f}<extra></extra>"
-        # hovertemplate=(
-        #     "Geopolitical Distance: %{customdata[0]}<br>" +
-        #     "Total Trade: %{y}<br>" +
-        #     "Exports: %{customdata[1]}<br>" +
-        #     "Imports: %{customdata[2]}<br>" +
-        #     "Trade Balance: %{customdata[3]}<extra></extra>"
-        # )
     ))
 
     # Add average geopolitical distance line for reporter
@@ -272,18 +269,44 @@ def update_geo_trade_chart(reporter, partner, trade_type):
         line=dict(width=2, color="gray", dash="dash"),
         yaxis="y1",
         hovertemplate="Reporter's Average Geopolitical Distance: %{y:.2f}<extra></extra>"
-        # hovertemplate=(
-        # f"{reporter}'s Avg Geo Distance: " + "%{y:.3f} (All Partners)<extra></extra>"
-        # )
     ))
+    
+    if combined["Year"].max() > 2023:
+        fig.add_vline(
+        x=2023.5,
+        line_width=2,
+        line_dash="dash",
+        line_color="red"
+    )
 
+        fig.add_annotation(
+            x=2023.5,
+            y=max(geo_avg_df["Geopolitical Distance"].max(),geo_partner_df["Geopolitical Distance"].max()),  # or a constant if you want
+            text="Trade numbers beyond<br>2023 are predicted",
+            showarrow=False,
+            font=dict(color="red", size=12),
+            align="left",
+            xshift=85,  # nudges the label right
+            yanchor="bottom",
+        )
+        # fig.add_vline(
+        # x=2023.5,
+        # line_width=2,
+        # line_dash="dash",
+        # line_color="red",
+        # annotation_text="Trade numbers beyond<br>2023 are predicted",
+        # annotation_position="top right",
+        # annotation_font=dict(color="red")
+        # )
+
+    tickvals = [year for year in combined["Year"].unique() if year != 2024 and year != 2025]
     # Layout
     fig.update_layout(
         hovermode='x unified',
         barmode="overlay",
         template="plotly_white",
         title=f"{partner}'s Share of {reporter}'s {trade_col} and Geopolitical Distance Over Time",
-        xaxis=dict(title="Year", dtick = 1),
+        xaxis=dict(title="Year", tickvals=tickvals, range=[combined["Year"].min() - 0.5, combined["Year"].max() + 0.5], dtick = 1),
         yaxis=dict(
             title="Geopolitical Distance",
             range=geo_range
@@ -304,10 +327,71 @@ def update_geo_trade_chart(reporter, partner, trade_type):
 @app.callback(
     Output("prediction-tab4b", "disabled"),
     Input("input-uploaded", "data"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
-def toggle_prediction_tab(uploaded):
-    return not uploaded
+# def toggle_prediction_tab(uploaded):
+#     return not uploaded
+
+def handle_prediction_upload(uploaded):
+    global df_pred, years
+
+    prediction_df = pd.read_csv("sample_2026.csv")
+    prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+    prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+    COUNTRY_LABELS = {
+        "ARE": "United Arab Emirates",
+        "AUS": "Australia",
+        "CHE": "Switzerland",
+        "CHN": "China",
+        "DEU": "Germany",
+        "FRA": "France",
+        "HKG": "Hong Kong",
+        "IDN": "Indonesia",
+        "IND": "India",
+        "JPN": "Japan",
+        "KOR": "South Korea",
+        "MYS": "Malaysia",
+        "NLD": "Netherlands",
+        "PHL": "Philippines",
+        "SGP": "Singapore",
+        "THA": "Thailand",
+        "USA": "United States",
+        "VNM": "Vietnam"
+    }
+    COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
+    prediction_df.rename(columns={
+        "country_a": "CountryA",
+        "country_b": "CountryB",
+        "year": "Year",
+        "total_import_of_A_from_B": "Imports",
+        "trade_volume": "Total Trade",
+        "total_export_A_to_B": "Exports"
+    }, inplace=True)
+
+    prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
+    prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
+    selected_columns = ['CountryA', 'CountryB', 'Year', 'Exports', 'Imports', 'Total Trade']
+    prediction_df = prediction_df[selected_columns]
+    prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
+
+    # Generate Surplus/Deficit Label
+    prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
+
+    #Get 2023 geopolitical distance from historical data
+    geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
+
+    #Merge predicted data with 2023 geo distance
+    df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
+
+    # #Concatenate both DataFrames
+    # df_combined = pd.concat([df, df_pred_filled], ignore_index=True)
+
+    # # === Update dropdown options with 2026 ===
+    # updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
+    # print(updated_years)
+    # options = [{'label': str(y), 'value': y} for y in updated_years]
+
+    return False
 
 @app.callback(
     Output("module4b-tabs", "value"),
@@ -324,6 +408,8 @@ def switch_to_prediction_tab(uploaded):
     Input("module4b-tabs", "value")
 )
 def render_tab_content(tab):
+    global df_pred
+
     if tab == "historical":
         return html.Div([
             html.Div(style={'marginTop': '20px'}),
@@ -332,8 +418,11 @@ def render_tab_content(tab):
         ])
     elif tab == "prediction":
         return html.Div([
-            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title4b", className="text-center mb-2"),
+            dcc.Graph(id='geo-trade-chart', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+            # html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+            # html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
     
 

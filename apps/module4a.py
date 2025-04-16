@@ -62,6 +62,9 @@ df['CountryB'] = df['CountryB'].map(COUNTRY_LABELS)
 # Generate Surplus/Deficit Label
 df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
 
+# === Placeholder for future prediction data ===
+df_pred = None
+
 # CHANGED
 app = get_app()
 
@@ -268,12 +271,16 @@ def update_order_and_metric(n_smallest, n_largest, n_distance, n_surplus, n_defi
 )
 
 def update_graph(reporter_country, selected_countries, num_countries, order, metric, selected_year):
+    global df_pred
     selected_countries = set(selected_countries or [])
     filtered_countries = set(get_filtered_countries(df, reporter_country, num_countries, order, metric, selected_year))
     countries_to_display = selected_countries.union(filtered_countries)
-    
+
+    # If 2026 involved and df_pred exists → merge both
+    current_df = pd.concat([df, df_pred]) if df_pred is not None else df
+
     # Filter by reporter country
-    filtered_df = df[df["CountryA"] == reporter_country]
+    filtered_df = current_df[current_df["CountryA"] == reporter_country]
 
     # Then filter by selected partner countries
     filtered_df = filtered_df[filtered_df["CountryB"].isin(countries_to_display)]
@@ -457,11 +464,75 @@ def update_graph(reporter_country, selected_countries, num_countries, order, met
 
 @app.callback(
     Output("prediction-tab4a", "disabled"),
+    Output("year-dropdown", "options"),
+    Output("year-dropdown", "value"),
     Input("input-uploaded", "data"),
-    #prevent_initial_call=True
+    prevent_initial_call=True
 )
-def toggle_prediction_tab(uploaded):
-    return not uploaded
+# def toggle_prediction_tab(uploaded):
+#     return not uploaded
+
+def handle_prediction_upload(uploaded):
+    global df_pred, years
+
+    prediction_df = pd.read_csv("sample_2026.csv")
+    prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+    prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+    COUNTRY_LABELS = {
+        "ARE": "United Arab Emirates",
+        "AUS": "Australia",
+        "CHE": "Switzerland",
+        "CHN": "China",
+        "DEU": "Germany",
+        "FRA": "France",
+        "HKG": "Hong Kong",
+        "IDN": "Indonesia",
+        "IND": "India",
+        "JPN": "Japan",
+        "KOR": "South Korea",
+        "MYS": "Malaysia",
+        "NLD": "Netherlands",
+        "PHL": "Philippines",
+        "SGP": "Singapore",
+        "THA": "Thailand",
+        "USA": "United States",
+        "VNM": "Vietnam"
+    }
+    COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
+    prediction_df.rename(columns={
+        "country_a": "CountryA",
+        "country_b": "CountryB",
+        "year": "Year",
+        "total_import_of_A_from_B": "Imports",
+        "trade_volume": "Total Trade",
+        "total_export_A_to_B": "Exports"
+    }, inplace=True)
+
+    prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
+    prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
+    selected_columns = ['CountryA', 'CountryB', 'Year', 'Exports', 'Imports', 'Total Trade']
+    prediction_df = prediction_df[selected_columns]
+    prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
+
+    # Generate Surplus/Deficit Label
+    prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
+
+    #Get 2023 geopolitical distance from historical data
+    geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
+
+    #Merge predicted data with 2023 geo distance
+    df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
+
+    # #Concatenate both DataFrames
+    # df_combined = pd.concat([df, df_pred_filled], ignore_index=True)
+
+    # === Update dropdown options with 2026 ===
+    updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
+    print(updated_years)
+    options = [{'label': str(y), 'value': y} for y in updated_years]
+
+    return False, options, max(updated_years)
+    
 
 @app.callback(
     Output("module4a-tabs", "value"),
@@ -478,6 +549,8 @@ def switch_to_prediction_tab(uploaded):
     Input("module4a-tabs", "value")
 )
 def render_tab_content(tab):
+    global df_pred
+
     if tab == "historical":
         return html.Div([
             html.Div(style={'marginTop': '20px'}),
@@ -486,14 +559,45 @@ def render_tab_content(tab):
         ])
     elif tab == "prediction":
         return html.Div([
-            html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-            html.P("This will show trade predictions based on uploaded news input.", className="text-center")
+            html.Div(style={'marginTop': '20px'}),
+            html.H5(id="sector-title4a", className="text-center mb-2"),
+            dcc.Graph(id='trade-graph', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
+            # html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
+            # html.P("This will show trade predictions based on uploaded news input.", className="text-center")
         ])
 
-# Load prediction data
-prediction_df = pd.read_csv("sample_2026.csv")
-prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+# # Load prediction data
+# prediction_df = pd.read_csv("sample_2026.csv")
+# prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+# prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+
+# @app.callback(
+#     Output("prediction-tab4a", "disabled"),
+#     Input("input-uploaded", "data")
+# )
+# def toggle_prediction_tab(uploaded):
+#     return not uploaded
+
+# @app.callback(
+#     Output("module4a-subtabs7abc", "children"),
+#     Output("module4a-subtabs7abc", "value"),
+#     Input("module4a-tabs", "value")
+# )
+# def toggle_subtab_visibility(main_tab):
+#     if main_tab == "historical":
+#         return "historical-bar7abc"
+#     else:
+#         return "prediction-bar7abc"
+
+# @app.callback(
+#     Output("module4a-tabs", "value"),
+#     Input("input-uploaded", "data"),
+#     prevent_initial_call=True
+# )
+# def switch_to_prediction_tab(uploaded):
+#     if uploaded:
+#         return "prediction"
+#     return dash.no_update
 
 # Merge historical and prediction data
 # df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
