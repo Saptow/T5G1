@@ -182,7 +182,7 @@ layout = html.Div([
             dcc.Tabs(id="trade-tabs", value="ranking", children=[
                 dcc.Tab(label="Ranking (Sector selection is optional)", value="ranking"),
                 dcc.Tab(label="Dumbbell", value="dumbbell"),
-                dcc.Tab(label="Bubble", value="bubble")
+
             ]),
             html.Div(id="tab-content")
         ])
