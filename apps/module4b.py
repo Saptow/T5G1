@@ -327,71 +327,87 @@ def update_geo_trade_chart(reporter, partner, trade_type):
 @app.callback(
     Output("prediction-tab4b", "disabled"),
     Input("input-uploaded", "data"),
+    Input("forecast-data", "data"),  # Add this input
     prevent_initial_call=True
 )
-# def toggle_prediction_tab(uploaded):
-#     return not uploaded
-
-def handle_prediction_upload(uploaded):
+def handle_prediction_upload(uploaded, forecast_data):
     global df_pred, years
+    
+    # Check if we have forecast data
+    if not uploaded or not forecast_data:
+        return True  # Keep prediction tab disabled
+    
+    try:
 
-    prediction_df = pd.read_csv("sample_2026.csv")
-    prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-    prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
-    COUNTRY_LABELS = {
-        "ARE": "United Arab Emirates",
-        "AUS": "Australia",
-        "CHE": "Switzerland",
-        "CHN": "China",
-        "DEU": "Germany",
-        "FRA": "France",
-        "HKG": "Hong Kong",
-        "IDN": "Indonesia",
-        "IND": "India",
-        "JPN": "Japan",
-        "KOR": "South Korea",
-        "MYS": "Malaysia",
-        "NLD": "Netherlands",
-        "PHL": "Philippines",
-        "SGP": "Singapore",
-        "THA": "Thailand",
-        "USA": "United States",
-        "VNM": "Vietnam"
-    }
-    COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
-    prediction_df.rename(columns={
-        "country_a": "CountryA",
-        "country_b": "CountryB",
-        "year": "Year",
-        "total_import_of_A_from_B": "Imports",
-        "trade_volume": "Total Trade",
-        "total_export_A_to_B": "Exports"
-    }, inplace=True)
+        prediction_df = pd.DataFrame(forecast_data)
+        
+        # If your forecast data is already in the required format:
+        if all(col in prediction_df.columns for col in ["country_a", "country_b", "year", "total_import_of_A_from_B", "trade_volume", "total_export_A_to_B"]):
+            pass  # Data is already properly formatted
+        else:
+            print("Unexpected forecast data format")
+            return True  # Keep prediction tab disabled
+        
+        # Filter for post-shock scenario if that's in your data
+        if "scenario" in prediction_df.columns:
+            prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+        
+        # Ensure year is numeric
+        prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+        
+        COUNTRY_LABELS = {
+            "ARE": "United Arab Emirates",
+            "AUS": "Australia",
+            "CHE": "Switzerland",
+            "CHN": "China",
+            "DEU": "Germany",
+            "FRA": "France",
+            "HKG": "Hong Kong",
+            "IDN": "Indonesia",
+            "IND": "India",
+            "JPN": "Japan",
+            "KOR": "South Korea",
+            "MYS": "Malaysia",
+            "NLD": "Netherlands",
+            "PHL": "Philippines",
+            "SGP": "Singapore",
+            "THA": "Thailand",
+            "USA": "United States",
+            "VNM": "Vietnam"
+        }
+        
+        # Rename columns
+        prediction_df.rename(columns={
+            "country_a": "CountryA",
+            "country_b": "CountryB",
+            "year": "Year",
+            "total_import_of_A_from_B": "Imports",
+            "trade_volume": "Total Trade",
+            "total_export_A_to_B": "Exports"
+        }, inplace=True)
 
-    prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
-    prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
-    selected_columns = ['CountryA', 'CountryB', 'Year', 'Exports', 'Imports', 'Total Trade']
-    prediction_df = prediction_df[selected_columns]
-    prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
+        # Map country codes to names
+        prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
+        prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
+        
+        selected_columns = ['CountryA', 'CountryB', 'Year', 'Exports', 'Imports', 'Total Trade']
+        prediction_df = prediction_df[selected_columns]
+        prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
 
-    # Generate Surplus/Deficit Label
-    prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
+        # Generate Surplus/Deficit Label
+        prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
 
-    #Get 2023 geopolitical distance from historical data
-    geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
+        # Get 2023 geopolitical distance from historical data
+        geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
 
-    #Merge predicted data with 2023 geo distance
-    df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
+        # Merge predicted data with 2023 geo distance
+        df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
 
-    # #Concatenate both DataFrames
-    # df_combined = pd.concat([df, df_pred_filled], ignore_index=True)
-
-    # # === Update dropdown options with 2026 ===
-    # updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
-    # print(updated_years)
-    # options = [{'label': str(y), 'value': y} for y in updated_years]
-
-    return False
+        return False  # Enable prediction tab
+    
+    except Exception as e:
+        print(f"Error processing forecast data: {e}")
+        return True  # Keep prediction tab disabled
 
 @app.callback(
     Output("module4b-tabs", "value"),

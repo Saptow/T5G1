@@ -1,4 +1,6 @@
 import warnings
+import pandas as pd
+import requests
 warnings.filterwarnings("ignore", message="A nonexistent object was used in an `Input` of a Dash callback.")
 
 import dash
@@ -180,41 +182,42 @@ def serve_layout():
         dcc.Location(id="url"),
         dcc.Store(id="uploaded-url"),
         dcc.Store(id="input-uploaded", data=False, storage_type = "session"),
+        dcc.Store(id="forecast-data", storage_type="memory"),
 
         navbar,  # Navbar includes the Predict button
 
-        dbc.Offcanvas(
-            #id="predict-offcanvas",
-            title="Prediction Input",
-            is_open=False,
-            placement="end",
-            children=[
-                # dbc.InputGroup([
-                #     dbc.Input(id="news-url-input", placeholder="Paste URL here...", type="url"),
-                #     dbc.Button("Go", id="submit-url", n_clicks=0, color="primary"),
-                # ], className="mb-4"),
+        # dbc.Offcanvas(
+        #     #id="predict-offcanvas",
+        #     title="Prediction Input",
+        #     is_open=False,
+        #     placement="end",
+        #     children=[
+        #         # dbc.InputGroup([
+        #         #     dbc.Input(id="news-url-input", placeholder="Paste URL here...", type="url"),
+        #         #     dbc.Button("Go", id="submit-url", n_clicks=0, color="primary"),
+        #         # ], className="mb-4"),
 
-                html.Hr(),
+        #         html.Hr(),
 
-                html.Div([
-                    html.H5("Or choose a sample article:"),
+        #         html.Div([
+        #             html.H5("Or choose a sample article:"),
 
-                    html.Img(src="/assets/news1.png", id="article-img-11", n_clicks=0,
-                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+        #             html.Img(src="/assets/news1.png", id="article-img-11", n_clicks=0,
+        #                      style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-                    html.Img(src="/assets/news2.png", id="article-img-21", n_clicks=0,
-                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+        #             html.Img(src="/assets/news2.png", id="article-img-21", n_clicks=0,
+        #                      style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-                    html.Img(src="/assets/news3.png", id="article-img-31", n_clicks=0,
-                             style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
-                ]),
+        #             html.Img(src="/assets/news3.png", id="article-img-31", n_clicks=0,
+        #                      style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
+        #         ]),
 
-                #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
-                #html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
-                #html.Div(id="input-status-message", className="mt-2"),
+        #         #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
+        #         #html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
+        #         #html.Div(id="input-status-message", className="mt-2"),
 
-            ]
-        ),
+        #     ]
+        # ),
 
         html.Div(id="sidebar-dynamic", style={"margin": "1rem 2rem"}),
         html.Div(id="page-content", style={"padding": "2rem 2rem 2rem 2rem", "marginTop": "5rem"}),
@@ -332,6 +335,7 @@ def toggle_offcanvas(n_clicks):
     Output("input-uploaded", "data", allow_duplicate=True),
     Output("uploaded-url", "data"),
     Output("predict-confirmation", "children"),
+    Output('forecast-data','data'),
     Input("submit-url", "n_clicks"),
     Input("article-img-11", "n_clicks"),
     Input("article-img-21", "n_clicks"),
@@ -342,15 +346,28 @@ def toggle_offcanvas(n_clicks):
 def handle_input_submission(n_go, n1, n2, n3, url_value):
     ctx_id = callback_context.triggered_id
     if ctx_id == "submit-url" and url_value and url_value.strip():
-        return True, url_value.strip(), "✅ Input successfully registered."
+        url_to_post = url_value.strip()
+        try:
+            # response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+            # response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+            
+            # response_data = response.json() if response.content else {} # Returns the dictionary 
+            response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
+            message = f"✅ Input successfully registered."
+            return True, url_to_post, message, response  # Return the response data as well
+        except Exception as e:
+            # In case of an error, log or use a custom error message.
+            message = f"❌ Failed to register input: {e}"
+            return dash.no_update, dash.no_update, message, dash.no_update
+
     elif ctx_id == "article-img-11":
-        return True, "https://sample-article1.com", "✅ Sample article 1 selected."
+        return True, "https://sample-article1.com", "✅ Sample article 1 selected.", {'sample':'data1'}
     elif ctx_id == "article-img-21":
-        return True, "https://sample-article2.com", "✅ Sample article 2 selected."
+        return True, "https://sample-article2.com", "✅ Sample article 2 selected.", {'sample':'data2'}
     elif ctx_id == "article-img-31":
-        return True, "https://sample-article3.com", "✅ Sample article 3 selected."
+        return True, "https://sample-article3.com", "✅ Sample article 3 selected.", {'sample':'data3'}
     
-    return dash.no_update, dash.no_update, dash.no_update
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 @app.callback(
     Output("input-status-message", "children", allow_duplicate=False),

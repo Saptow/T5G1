@@ -799,14 +799,14 @@ import dash_daq as daq
 # === Load and Prepare Data ===
 df_raw = pd.read_csv("data/final/historical_data.csv")
 
-# === Load and Prepare Prediction Data ===
-prediction_df = pd.read_csv("sample_2026.csv")
-prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+# # === Load and Prepare Prediction Data ===
+# prediction_df = pd.read_csv("sample_2026.csv")
+# prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+# prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
 
-# Merge historical and prediction data
-df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
-df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
+# # Merge historical and prediction data
+# df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
+# df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
 
 SECTOR_LABELS = {
     "bec_1": "Food and Agriculture",
@@ -882,6 +882,7 @@ layout = html.Div([
     dcc.Store(id="selected-sector7abc", data=SECTOR_CODES[0]),
     dcc.Store(id="trade-type-select7abc", data='total'),
     dcc.Store(id="display-mode7abc", data='volume'),
+    dcc.Store(id='processed-forecast-data7abc', storage_type='memory'),
 
     html.H2("Sector Trade Trends Over Time", className="text-center mb-4"),
 
@@ -965,6 +966,31 @@ layout = html.Div([
         html.Div(id="module1c-graph-container7abc")
     ])
   ])
+# Add callback to process the forecast data when it becomes available
+@app.callback(
+    Output("processed-forecast-data7abc", "data"),
+    Input("forecast-data", "data"),
+    prevent_initial_call=True
+)
+def process_forecast_data(forecast_data):
+    if not forecast_data:
+        return dash.no_update
+        
+    # Convert the forecast data to DataFrame
+    prediction_df = pd.DataFrame(forecast_data)
+    
+    # Filter postshock scenario if available
+    if "scenario" in prediction_df.columns:
+        prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+    
+    # Ensure year is numeric
+    prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+    
+    # Merge with historical data
+    df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
+    
+    # Return the processed data
+    return df_combined_all.to_dict('records')
 
 @app.callback(
     Output("module1c-graph-container7abc", "children"),
@@ -974,14 +1000,18 @@ layout = html.Div([
     Input("selected-sector7abc", "data"),
     Input("selected-sectors-multi7abc", "data"),
     Input("trade-type-select7abc", "data"),
-    Input("display-mode7abc", "data")
+    Input("display-mode7abc", "data"),
+    Input("processed-forecast-data7abc", "data") 
 )
-def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_type, display_mode):
+def update_graph(subtab, country, partner, single_sector, multi_sectors, trade_type, display_mode, processed_forecast_data):
     if not country or not partner:
         return dash.no_update
 
     country_id = COUNTRY_NAMES[country]
     partner_id = COUNTRY_NAMES[partner]
+
+    # Use the processed forecast data when available
+    df_combined_all = pd.DataFrame(processed_forecast_data) if processed_forecast_data else df_raw.copy()
 
     if subtab.startswith("historical"):
         df_view_all = df_raw[
@@ -1205,12 +1235,13 @@ def update_trade_type(n_total, n_export, n_import):
 def update_display_mode(toggle_value):
     return 'percentage' if toggle_value else 'volume'
 
+# Update the prediction tab enablement callback
 @app.callback(
     Output("prediction-tab7abc", "disabled"),
-    Input("input-uploaded", "data")
+    Input("forecast-data", "data")
 )
-def toggle_prediction_tab(uploaded):
-    return not uploaded
+def toggle_prediction_tab(forecast_data):
+    return not forecast_data
 
 @app.callback(
     Output("module1c-subtabs7abc", "children"),
@@ -1233,13 +1264,14 @@ def toggle_subtab_visibility(main_tab):
             dcc.Tab(label="Line Chart", value="prediction-line7abc", disabled=False)
         ], "prediction-bar7abc"
 
+# Update the tab switching callback
 @app.callback(
     Output("module1c-tabs7abc", "value"),
-    Input("input-uploaded", "data"),
+    Input("forecast-data", "data"),
     prevent_initial_call=True
 )
-def switch_to_prediction_tab(uploaded):
-    if uploaded:
+def switch_to_prediction_tab(forecast_data):
+    if forecast_data:
         return "prediction"
     return dash.no_update
 

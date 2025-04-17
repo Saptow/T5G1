@@ -5,8 +5,12 @@ FROM python:3.12.0-slim-bookworm
 WORKDIR /app
 
 # Install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-docker.txt .
+RUN pip install --no-cache-dir -r requirements-docker.txt
+RUN pip install --no-cache-dir transformers==4.51.3
+RUN pip3 install torch --index-url https://download.pytorch.org/whl/cpu
+RUN pip install torch-geometric -f https://data.pyg.org/whl/torch-2.6.0+cpu.html
+
 
 # copy app code (to immediately deploy backend)
 COPY . .

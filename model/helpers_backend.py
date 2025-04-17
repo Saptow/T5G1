@@ -107,10 +107,15 @@ class DebertaForRegression(PreTrainedModel):
         self.loss_fn = nn.MSELoss()
 
     def forward(self, input_ids, attention_mask=None, labels=None, num_items_in_batch: int | None = None,  **kwargs ):
+
+        allowed_keys = {"input_ids", "attention_mask", "token_type_ids", "labels"}
+    
+        # Filter kwargs to only include allowed keys
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_keys}
         out = self.classifier(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            **kwargs
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        **filtered_kwargs
         )
         logits = out.logits                      # (B, 3)
         probs  = F.softmax(logits, dim=-1)       # (B, 3)
@@ -216,7 +221,7 @@ def process_article_for_sentiment_analysis(url, debug=False):
     model_path = "yangheng/deberta-v3-base-absa-v1.1"
     checkpoint_path = "ML2105/deberta-geopolitical-sentiment"
 
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
     config = AutoConfig.from_pretrained(model_path)
     model = DebertaForRegression.from_pretrained(checkpoint_path, config=config)
 
@@ -392,7 +397,7 @@ def process_article_for_sentiment_analysis(url, debug=False):
                 text,                # Article text
                 pair,                # Country pair
                 return_tensors="pt",
-                truncation=True,
+                truncation='only_first',
                 padding="max_length",
                 max_length=512,
                 stride=128,          # Overlap for chunks
@@ -574,7 +579,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     args.set_args(embed_dim=10, lr_init=0.005489139587271934,lr_decay_rate=0.18605505546333992, rnn_units=64, num_layers=2, weight_decay=3.0450041080579258e-05) #based on best model by Optuna
 
     #convert to tensor
-    test_data_tensor, years, country_pairs_model = csv_to_tensor_run('../data/final/run_model_data.csv',sentiment_dict=sentiment_dict,year_nlp=year_nlp)
+    test_data_tensor, years, country_pairs_model = csv_to_tensor_run('./data/final/run_model_data.csv',sentiment_dict=sentiment_dict,year_nlp=year_nlp)
     
     #do normalisation
     data_to_normalize = test_data_tensor[:, :, :8]
@@ -603,7 +608,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     #load model and previously saved states
     model=AGCRNFinal(args)
     model=model.to(args.device)
-    model.load_state_dict(torch.load('./logs/best_model_69.pth',map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load('./model/logs/best_model_69.pth',map_location=torch.device('cpu')))
     model.eval()
     with torch.no_grad():
         test_x_tensor = test_x_tensor.to(args.device)
@@ -614,7 +619,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     predictions = scaler.inverse_transform(predictions[0, :, :, :8])
 
     # CONVERT % CHANGES TO ABSOLUTE VALUES
-    initial_nums=pd.read_csv('../data/final/without_ARE_2021_2023.csv',header=0)
+    initial_nums=pd.read_csv('./data/final/without_ARE_2021_2023.csv',header=0)
 
     # we only need 2023 data to compute forecasted 2024, 2025 and 2026 values
     initial_nums=initial_nums[initial_nums['year']==2023]
@@ -683,18 +688,18 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     #add additional columns for frontend
     bec_export_cols=[f'bec_{i}_export_A_to_b' for i in range(1, 9)]
     bec_import_cols=[f'bec_{i}_import_A_from_B' for i in range(1, 9)]
-    temp['total_export_A_to_B']=temp[bec_export_cols].sum(axis=1)
-    temp['total_import_A_from_B']=temp[bec_import_cols].sum(axis=1)
-    temp['trade_volume']=temp['total_export_A_to_B']+temp['total_import_A_from_B']
+    temp['total_export_of_A_to_B']=temp[bec_export_cols].sum(axis=1)
+    temp['total_import_of_A_from_B']=temp[bec_import_cols].sum(axis=1)
+    temp['trade_volume']=temp['total_export_of_A_to_B']+temp['total_import_of_A_from_B']
+    temp['scenario']='postshock'
 
     #reorder columns for frontend
-    temp=temp[['country_a','country_b','year','total_export_A_to_B','total_import_A_from_B','trade_volume']+bec_export_cols+bec_import_cols+['scenario']]
+    temp=temp[['country_a','country_b','year','total_export_of_A_to_B','total_import_of_A_from_B','trade_volume']+bec_export_cols+bec_import_cols+['scenario']]
 
     # #filter only 2026 data and add scenario column for frontend
     temp=temp[temp['year']==2026] #comment out if need 2024 to 2026 data as well
-    temp['scenario']='postshock'
 
-    baseline=pd.read_csv('../data/final/2026_baseline_forecast.csv',header=0)
+    baseline=pd.read_csv('./data/final/2026_baseline_forecast.csv',header=0)
     final=pd.concat([baseline,temp],axis=0,ignore_index=True)
     final.reset_index(drop=True,inplace=True)
     return final
