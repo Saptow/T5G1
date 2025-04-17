@@ -377,5 +377,5 @@ def switch_to_prediction_tab(uploaded):
 #         for code in COUNTRY_LABELS
 #     ]
 
-
+sidebar_controls = html.Div([])
 

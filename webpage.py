@@ -68,11 +68,11 @@ navbar = dbc.Navbar(
                 dbc.NavItem(dbc.NavLink("Trade Map", href="/module2", className="mx-3", active="exact")),
                 # dbc.NavItem(dbc.NavLink("Home", href="/", className="mx-2 fs-5", active="exact")),
                 dbc.DropdownMenu(label="Countries", children=[
-                    dbc.DropdownMenuItem("Country Share Breakdown", href="/module3a"),
+                    dbc.DropdownMenuItem("Country Share Breakdown", href="/module1a"),
                     dbc.DropdownMenuItem("Country Share Trend", href="/module3b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
                 dbc.DropdownMenu(label="Sectors", children=[
-                    dbc.DropdownMenuItem("Sector Share Breakdown", href="/module1a"),
+                    dbc.DropdownMenuItem("Sector Share Breakdown", href="/module3a"),
                     dbc.DropdownMenuItem("Sector Share Trend", href="/module1b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
                 dbc.DropdownMenu(label="Geopolitical Relations", children=[
