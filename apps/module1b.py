@@ -884,9 +884,24 @@ layout = html.Div([
     dcc.Store(id="display-mode7abc", data='volume'),
     dcc.Store(id='processed-forecast-data7abc', storage_type='memory'),
 
-    html.H1("How has an economy's trade in a sector evolved over time?", className="mb-4"),
-    html.H5("Track how an economy’s sectoral trade with a trading partner has changed over the years."),
+    html.H1("Sector Share Trend", className="mb-4 text-center"),
+    html.Div(
+        html.H6(
+            """
+            Track how trade in a specific sector between an economy and its trading partner has evolved over time. 
+            Select the sector, trade direction, and visualisation type to explore trends in trade value or percentage share. 
+            Use this tool to uncover long-term patterns and understand how sectoral trade relationships have shifted over the years.
 
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4', 
+                'marginBottom': '24px'
+            }
+        )
+    ),
     html.Div([
         html.Div([
             html.Label("Select Economy:", className="form-label fw-semibold mb-1"),
