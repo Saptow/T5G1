@@ -577,30 +577,30 @@ sidebar_controls = html.Div([])
 
 ### INSERT PREDICTION TAB CODE AND DATA MANGLING HERE
 
-# === PREDICTION DATA PREPARATION ===
-new_df = pd.read_csv('sample_2026.csv')
+# # === PREDICTION DATA PREPARATION ===
+# new_df = pd.read_csv('sample_2026.csv')
 
 # Get only latest year from historical data
 historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
 
-new_df = new_df[new_df['scenario'] == 'postshock'].copy()
-new_df.drop(columns=['scenario'], inplace=True)
+# new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+# new_df.drop(columns=['scenario'], inplace=True)
 
-# Step 2: Ensure column alignment
-new_df = new_df[historical_latest.columns]
+# # Step 2: Ensure column alignment
+# new_df = new_df[historical_latest.columns]
 
-# Step 3: Ensure all numeric columns are converted
-for col in new_df.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+# # Step 3: Ensure all numeric columns are converted
+# for col in new_df.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
 
-for col in historical_latest.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+# for col in historical_latest.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
 
-# Merge the two datasets
-merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
-merged_prediction_df = merged_prediction_df.round(2)
+# # Merge the two datasets
+# merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+# merged_prediction_df = merged_prediction_df.round(2)
 
 
 # Commenting Out
@@ -794,16 +794,44 @@ merged_prediction_df = merged_prediction_df.round(2)
     Input('country-select1b', 'value'),
     Input('trade-type-select1b', 'data'),
     Input('country-select-alt21b', 'value'),
-    Input('module1b-tabs', 'value')
+    Input('module1b-tabs', 'value'),
+    Input('forecast-data', 'data')  # Add this input
 )
-def update_all_visualizations(selected_country, trade_type, selected_partner, tab):
+def update_all_visualizations(selected_country, trade_type, selected_partner, tab, forecast_data):
     if tab == 'prediction':
-        data_source = merged_prediction_df
+        # Instead of reading from CSV, use the stored forecast data
+        if forecast_data:
+            # Convert the stored JSON data back to a DataFrame
+            new_df = pd.DataFrame(forecast_data)
+            
+            # Apply any necessary transformations similar to what you did with the CSV data
+            new_df = new_df[new_df['scenario'] == 'postshock'].copy() if 'scenario' in new_df.columns else new_df
+            if 'scenario' in new_df.columns:
+                new_df.drop(columns=['scenario'], inplace=True)
+            
+            # Ensure column alignment with historical data
+            common_columns = list(set(new_df.columns).intersection(set(historical_latest.columns)))
+            new_df = new_df[common_columns]
+            
+            # Convert numeric columns
+            for col in new_df.columns:
+                if col not in ['country_a', 'country_b', 'year']:
+                    new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+            
+            # Merge with historical data
+            merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+            merged_prediction_df = merged_prediction_df.round(2)
+            
+            data_source = merged_prediction_df
+        else:
+            # If no forecast data available, fall back to historical
+            data_source = df
     else:
         data_source = df
 
+    # Rest of the visualization code remains the same
     country_id = COUNTRY_NAMES[selected_country]
-
+    
     # Filter data: always treat selected_country as A
     filtered = data_source[data_source['country_a'] == country_id].copy()
     filtered['partner_country'] = filtered['country_b'].map(COUNTRY_LABELS)
@@ -866,3 +894,4 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
 
     return fig_treemap, fig_bar, partner_options, title
+

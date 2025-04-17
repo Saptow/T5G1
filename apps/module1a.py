@@ -85,7 +85,6 @@ def calculate_country_shares(data, trade_type, selected_sector):
 layout = html.Div([
     dcc.Store(id="trade-type-select1a", data='total'),
     dcc.Store(id="display-type1a", data='percentage'),
-
     html.H1("Trade by Sector and Partner Country", className="text-center mb-4", style={'color': '#2c3e50'}),
 
     html.Div([
@@ -180,10 +179,10 @@ def update_display_type(value):
 
 @app.callback(
     Output("prediction-tab1a", "disabled"),
-    Input("input-uploaded", "data")
+    Input("forecast-data", "data")
 )
-def toggle_prediction_tab(uploaded):
-    return not uploaded
+def toggle_prediction_tab(forecast_data):
+    return not forecast_data
 
 @app.callback(
     Output("module1a-tabs", "value"),
@@ -222,12 +221,12 @@ def toggle_graph_visibility(display_type):
     Input('sector-dropdown', 'value'),
     Input('trade-type-select1a', 'data'),
     Input('display-type1a', 'data'),
-    Input('module1a-tabs', 'value')
+    Input('module1a-tabs', 'value'),
+    Input('merged-prediction-df-store', 'data')  
 )
-
-def update_charts(reporter, sector, trade_type, display_type, tab):
-    if tab == 'prediction':
-        data_source = merged_prediction_df
+def update_charts(reporter, sector, trade_type, display_type, tab, prediction_data):
+    if tab == 'prediction' and prediction_data:
+        data_source = pd.DataFrame(prediction_data)
     else:
         data_source = df
 
@@ -305,29 +304,74 @@ def update_charts(reporter, sector, trade_type, display_type, tab):
         return fig_bar, fig_treemap, {'display': 'block'}, {'display': 'none'}
 
 
-# === PREDICTION DATA PREPARATION ===
-new_df = pd.read_csv('sample_2026.csv')
+# # === PREDICTION DATA PREPARATION ===
+# new_df = pd.read_csv('sample_2026.csv')
 
-# Get only latest year from historical data
-historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
+# # Get only latest year from historical data
+# historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
 
-new_df = new_df[new_df['scenario'] == 'postshock'].copy()
-new_df.drop(columns=['scenario'], inplace=True)
+# new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+# new_df.drop(columns=['scenario'], inplace=True)
 
-# Step 2: Ensure column alignment
-new_df = new_df[historical_latest.columns]
+# # Step 2: Ensure column alignment
+# new_df = new_df[historical_latest.columns]
 
-# Step 3: Ensure all numeric columns are converted
-for col in new_df.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+# # Step 3: Ensure all numeric columns are converted
+# for col in new_df.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
 
-for col in historical_latest.columns:
-    if col not in ['country_a', 'country_b', 'year']:
-        historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+# for col in historical_latest.columns:
+#     if col not in ['country_a', 'country_b', 'year']:
+#         historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
 
-# Merge the two datasets
-merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
-merged_prediction_df = merged_prediction_df.round(2)
+# # Merge the two datasets
+# merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+# merged_prediction_df = merged_prediction_df.round(2)
+
+
+# Replace the PREDICTION DATA PREPARATION section with this:
+@app.callback(
+    Output("merged-prediction-df-store", "data"),
+    Input("forecast-data", "data"),
+    prevent_initial_call=True
+)
+def prepare_prediction_data(forecast_data):
+    if not forecast_data:
+        return dash.no_update
+        
+    # Convert the stored JSON data back to DataFrame
+    new_df = pd.DataFrame(forecast_data)
+    
+    # Get only latest year from historical data
+    historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
+    
+    # Filter to postshock scenario if available
+    if 'scenario' in new_df.columns:
+        new_df = new_df[new_df['scenario'] == 'postshock'].copy()
+        new_df.drop(columns=['scenario'], inplace=True)
+    
+    # Ensure column alignment
+    common_columns = list(set(historical_latest.columns).intersection(set(new_df.columns)))
+    new_df = new_df[common_columns]
+    historical_latest = historical_latest[common_columns]
+    
+    # Ensure all numeric columns are converted
+    for col in new_df.columns:
+        if col not in ['country_a', 'country_b', 'year']:
+            new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
+    
+    for col in historical_latest.columns:
+        if col not in ['country_a', 'country_b', 'year']:
+            historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
+    
+    # Merge the two datasets
+    merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
+    merged_prediction_df = merged_prediction_df.round(2)
+    
+    return merged_prediction_df.to_dict('records')
+
+# Add a store to hold the processed prediction data
+dcc.Store(id="merged-prediction-df-store", storage_type="memory"),
 
 sidebar_controls = html.Div([])

@@ -424,17 +424,20 @@ def register_callbacks(app):
     Output("compare-year", "value"),
     Output("compare-toggle", "on"),  
     Input("input-uploaded", "data"),
+    State("forecast-data", "data"),  # Add this to get the forecast data from the store
     prevent_initial_call=True
 )
-
-def handle_prediction_upload(uploaded):
+def handle_prediction_upload(uploaded, forecast_data):
     global df_pred, years
 
-    if not uploaded:
+    if not uploaded or not forecast_data:
         raise PreventUpdate
 
-    # === Load and clean prediction data ===
-    pred_df = pd.read_csv("sample_2026.csv")
+    # Convert the JSON data from the store to a DataFrame
+    pred_df = pd.DataFrame.from_dict(forecast_data)
+    
+    # === Clean prediction data ===
+    # Assuming forecast_data contains the same structure as the sample_2026.csv
     pred_df = pred_df[pred_df["scenario"] == "postshock"].copy()
     pred_df.drop(columns=["scenario"], inplace=True)
 
@@ -462,7 +465,6 @@ def handle_prediction_upload(uploaded):
     options = [{'label': str(y), 'value': y} for y in updated_years]
 
     return False, options, options, 2026, 2026, True
-
 
 @app.callback(
     Output("module2-tabs", "value"),

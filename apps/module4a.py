@@ -466,84 +466,100 @@ def update_graph(reporter_country, selected_countries, num_countries, order, met
     Output("prediction-tab4a", "disabled"),
     Output("year-dropdown", "options"),
     Output("year-dropdown", "value"),
-    Input("input-uploaded", "data"),
+    Input("forecast-data", "data"),  # Changed from "input-uploaded" to "forecast-data"
     prevent_initial_call=True
 )
-# def toggle_prediction_tab(uploaded):
-#     return not uploaded
-
-def handle_prediction_upload(uploaded):
+def handle_prediction_upload(forecast_data):
     global df_pred, years
-
-    prediction_df = pd.read_csv("sample_2026.csv")
-    prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-    prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
-    COUNTRY_LABELS = {
-        "ARE": "United Arab Emirates",
-        "AUS": "Australia",
-        "CHE": "Switzerland",
-        "CHN": "China",
-        "DEU": "Germany",
-        "FRA": "France",
-        "HKG": "Hong Kong",
-        "IDN": "Indonesia",
-        "IND": "India",
-        "JPN": "Japan",
-        "KOR": "South Korea",
-        "MYS": "Malaysia",
-        "NLD": "Netherlands",
-        "PHL": "Philippines",
-        "SGP": "Singapore",
-        "THA": "Thailand",
-        "USA": "United States",
-        "VNM": "Vietnam"
-    }
-    COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
-    prediction_df.rename(columns={
-        "country_a": "CountryA",
-        "country_b": "CountryB",
-        "year": "Year",
-        "total_import_of_A_from_B": "Imports",
-        "trade_volume": "Total Trade",
-        "total_export_A_to_B": "Exports"
-    }, inplace=True)
-
-    prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
-    prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
-    selected_columns = ['CountryA', 'CountryB', 'Year', 'Exports', 'Imports', 'Total Trade']
-    prediction_df = prediction_df[selected_columns]
-    prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
-
-    # Generate Surplus/Deficit Label
-    prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
-
-    #Get 2023 geopolitical distance from historical data
-    geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
-
-    #Merge predicted data with 2023 geo distance
-    df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
-
-    # #Concatenate both DataFrames
-    # df_combined = pd.concat([df, df_pred_filled], ignore_index=True)
-
-    # === Update dropdown options with 2026 ===
-    updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
-    print(updated_years)
-    options = [{'label': str(y), 'value': y} for y in updated_years]
-
-    return False, options, max(updated_years)
     
+    # Return early if no forecast data
+    if not forecast_data:
+        return True, [{"label": str(year), "value": year} for year in years], max(years)
+        
+    try:
+        # Process the API response data instead of reading from CSV
+        prediction_df = pd.DataFrame(forecast_data)
+        
+        # Keep only postshock scenario if that field exists
+        if "scenario" in prediction_df.columns:
+            prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+        
+        # Ensure year is numeric
+        if "year" in prediction_df.columns:
+            prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+        
+        COUNTRY_LABELS = {
+            "ARE": "United Arab Emirates",
+            "AUS": "Australia",
+            "CHE": "Switzerland",
+            "CHN": "China",
+            "DEU": "Germany",
+            "FRA": "France",
+            "HKG": "Hong Kong",
+            "IDN": "Indonesia",
+            "IND": "India",
+            "JPN": "Japan",
+            "KOR": "South Korea",
+            "MYS": "Malaysia",
+            "NLD": "Netherlands",
+            "PHL": "Philippines",
+            "SGP": "Singapore",
+            "THA": "Thailand",
+            "USA": "United States",
+            "VNM": "Vietnam"
+        }
+
+        # Rename columns to match historical data format
+        column_mapping = {
+            "country_a": "CountryA",
+            "country_b": "CountryB",
+            "year": "Year",
+            "total_import_of_A_from_B": "Imports",
+            "trade_volume": "Total Trade",
+            "total_export_from_A_to_B": "Exports"
+        }
+        
+        # Only rename columns that exist
+        cols_to_rename = {k: v for k, v in column_mapping.items() if k in prediction_df.columns}
+        prediction_df.rename(columns=cols_to_rename, inplace=True)
+        
+        # Map country codes to full names
+        if "CountryA" in prediction_df.columns:
+            prediction_df['CountryA'] = prediction_df['CountryA'].map(COUNTRY_LABELS)
+        if "CountryB" in prediction_df.columns:
+            prediction_df['CountryB'] = prediction_df['CountryB'].map(COUNTRY_LABELS)
+        
+        # Calculate trade balance
+        if "Exports" in prediction_df.columns and "Imports" in prediction_df.columns:
+            prediction_df["Trade Balance"] = prediction_df["Exports"] - prediction_df["Imports"]
+            prediction_df["Balance of Trade"] = prediction_df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
+        
+        # Get 2023 geopolitical distance from historical data
+        geo_2023 = df[df['Year'] == 2023][['CountryA', 'CountryB', 'Geopolitical Distance']]
+        
+        # Merge predicted data with 2023 geo distance
+        df_pred = prediction_df.merge(geo_2023, on=['CountryA', 'CountryB'], how='left')
+        
+        # Update dropdown options with new year(s)
+        updated_years = sorted(set(df['Year'].unique()).union(df_pred['Year'].unique()))
+        options = [{'label': str(y), 'value': y} for y in updated_years]
+        
+        return False, options, max(updated_years)
+        
+    except Exception as e:
+        print(f"Error processing forecast data: {e}")
+        return True, [{"label": str(year), "value": year} for year in years], max(years)
+
 
 @app.callback(
     Output("module4a-tabs", "value"),
-    Input("input-uploaded", "data"),
+    Input("forecast-data", "data"),  
     prevent_initial_call=True
 )
-def switch_to_prediction_tab(uploaded):
-    if uploaded:
+def switch_to_prediction_tab(forecast_data):
+    if forecast_data:
         return "prediction"
     return dash.no_update
-
 @app.callback(
     Output("module4a-tab-content", "children"),
     Input("module4a-tabs", "value")
