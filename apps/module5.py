@@ -138,8 +138,23 @@ layout = html.Div([
 
         # === Main Page Content ===
         html.Div(id="main-page-content", children=[
-            html.H2("Which countries and sectors are most impacted from this development?", className="mb-3"),
-            html.H5("View in real-time the biggest winners and losers from this news, across countries and sectors"),
+            html.H1("News Impact on Forecast", className="mb-4 text-center"),
+            html.Div(
+                html.H6(
+                    """
+                    View in real-time how global news events influence trade forecasts across countries and sectors. 
+                    This tool highlights the biggest projected winners and losers by comparing predicted changes in trade volume relative to a baseline scenario. 
+                    Toggle between country and sector views, select trade type, and instantly assess the directional impact of current events on future trade outcomes.
+                    """,
+                    style={
+                        'color': '#333333',
+                        'fontSize': '16px',
+                        'fontFamily': 'Lato, sans-serif',
+                        'lineHeight': '1.4', 
+                        'marginBottom': '24px'
+                    }
+                )
+            ),
             html.Div([
                 # 1. Toggle Switch Section
             html.Div([
