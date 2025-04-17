@@ -483,6 +483,9 @@ def switch_to_prediction_tab(uploaded):
 def render_tab_content(tab):
     global df_pred
 
+def toggle_prediction_tab(uploaded):
+    return not uploaded
+
 app.layout = layout
 register_callbacks(app)
 
