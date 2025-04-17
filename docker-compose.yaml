@@ -3,7 +3,7 @@ version: "3.8"
 services:
   frontend:
     build: .
-    command: python main.py #change to suitable one after frontend merges in
+    command: python webpage.py 
     ports:
       - "8050:8050"
     depends_on:

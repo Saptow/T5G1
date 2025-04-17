@@ -516,7 +516,7 @@ def handle_prediction_upload(forecast_data):
             "year": "Year",
             "total_import_of_A_from_B": "Imports",
             "trade_volume": "Total Trade",
-            "total_export_A_to_B": "Exports"
+            "total_export_from_A_to_B": "Exports"
         }
         
         # Only rename columns that exist

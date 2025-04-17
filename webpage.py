@@ -1,4 +1,5 @@
 import warnings
+import pandas as pd
 import requests
 warnings.filterwarnings("ignore", message="A nonexistent object was used in an `Input` of a Dash callback.")
 
@@ -347,13 +348,13 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
     if ctx_id == "submit-url" and url_value and url_value.strip():
         url_to_post = url_value.strip()
         try:
-            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+            # response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+            # response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
             
-            response_data = response.json() if response.content else {} # Returns the dictionary 
-
+            # response_data = response.json() if response.content else {} # Returns the dictionary 
+            response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
             message = f"✅ Input successfully registered."
-            return True, url_to_post, message, response_data  # Return the response data as well
+            return True, url_to_post, message, response  # Return the response data as well
         except Exception as e:
             # In case of an error, log or use a custom error message.
             message = f"❌ Failed to register input: {e}"

@@ -10,7 +10,6 @@ RUN pip install --no-cache-dir -r requirements-docker.txt
 RUN pip install --no-cache-dir transformers==4.51.3
 RUN pip3 install torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install torch-geometric -f https://data.pyg.org/whl/torch-2.6.0+cpu.html
-RUN pip install flask[async]
 
 
 # copy app code (to immediately deploy backend)
