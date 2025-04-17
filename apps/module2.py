@@ -79,7 +79,7 @@ layout = html.Div([
 
     # ==== Row 1 ====
     html.Div([
-        dcc.Store(id="input-uploaded", storage_type="session"),
+        #dcc.Store(id="input-uploaded", storage_type="session"),
         # Year Mode Toggle
         html.Div([
             html.Label("Year Filter:"),
