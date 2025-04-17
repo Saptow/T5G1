@@ -151,14 +151,12 @@ layout = html.Div([
     dcc.Store(id="trade-type-select1b", data='total'),
     dcc.Store(id="display-type1b", data='percentage'),
 
-    html.H1("Sectoral Trade Composition Viewer", className="mb-4", style={'color': '#2c3e50'}),
+    html.H1("Sectoral Share Breakdown", className="mb-4 text-center"),
     html.Div(
         html.H6(
             """
-            Visualize Singapore’s trade distribution across sectors for a selected year, direction (Total, Export, Import), and trading partner. 
-            Toggle between bar chart and treemap views to explore each sector’s contribution to trade value, alongside its year-on-year percentage change. 
-            This module helps identify dominant sectors and track shifting trade dynamics over time.
-
+            Analyze how different trading partners contribute to a selected sector’s trade for a given country. 
+            Customize your view by choosing trade type (Total, Exports, Imports) and display mode (Volume or Percentage Share) to uncover shifts in trade concentration, evolving partner roles, and regional trade patterns across economic sectors.
             """,
             style={
                 'color': '#333333',
