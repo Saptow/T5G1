@@ -99,23 +99,18 @@ class DebertaForRegression(PreTrainedModel):
     """
     def __init__(self, config):
         super().__init__(config)
-        self.classifier = AutoModelForSequenceClassification.from_pretrained(
-            config._name_or_path, config=config
+        self.classifier = AutoModelForSequenceClassification.from_config(
+            config
         )
         self.register_buffer("value_map", torch.tensor([-1.0, 0.0, 1.0]))
 
         self.loss_fn = nn.MSELoss()
 
     def forward(self, input_ids, attention_mask=None, labels=None, num_items_in_batch: int | None = None,  **kwargs ):
-
-        allowed_keys = {"input_ids", "attention_mask", "token_type_ids", "labels"}
-    
-        # Filter kwargs to only include allowed keys
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_keys}
         out = self.classifier(
-        input_ids=input_ids,
-        attention_mask=attention_mask,
-        **filtered_kwargs
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            **kwargs
         )
         logits = out.logits                      # (B, 3)
         probs  = F.softmax(logits, dim=-1)       # (B, 3)
@@ -133,11 +128,7 @@ class DebertaForRegression(PreTrainedModel):
             hidden_states = out.hidden_states,
             attentions    = out.attentions,
         )
-#####################################################
-############### HELPER FUNCTIONS ####################
-#####################################################
 
-## NLP functions
 def process_article_for_sentiment_analysis(url, debug=False):
     """
     Unified function that:
@@ -215,18 +206,23 @@ def process_article_for_sentiment_analysis(url, debug=False):
         "northern america": ["USA"]
     }
 
+    # Step 3: Initialize model
 
 
-    # Define the original model repository path for tokenizer and model
-    model_path = "yangheng/deberta-v3-base-absa-v1.1"
-    checkpoint_path = "ML2105/deberta-geopolitical-sentiment"
+    # Define the model and tokenizer paths
+    model_path = "ML2105/deberta-geopolitical-sentiment"
 
-    tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+
+    # Load the tokenizer using the specific DebertaV2Tokenizer class that worked
+    from transformers import DebertaV2Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+
+    # Load the model config from the model path
     config = AutoConfig.from_pretrained(model_path)
-    model = DebertaForRegression.from_pretrained(checkpoint_path, config=config)
+    config.architectures = ["DebertaForRegression"]
 
-    device = "cpu"
-    model = model.to(device)
+    # Load the model from the checkpoint
+    model = DebertaForRegression.from_pretrained(model_path, trust_remote_code=True, use_safetensors=True, config=config) 
 
     # Step 4: Define helper functions
 
@@ -397,7 +393,7 @@ def process_article_for_sentiment_analysis(url, debug=False):
                 text,                # Article text
                 pair,                # Country pair
                 return_tensors="pt",
-                truncation='only_first',
+                truncation=True,
                 padding="max_length",
                 max_length=512,
                 stride=128,          # Overlap for chunks
@@ -429,14 +425,14 @@ def process_article_for_sentiment_analysis(url, debug=False):
             # Compute the average score across all chunks for this country pair
             avg_score = total_score / num_chunks if num_chunks > 0 else 0  # Avoid division by zero
 
-            results[pair] = round(avg_score, 4)  # Store the averaged score for the current pair
+            results[pair] = avg_score  # Store the averaged score for the current pair
 
         if debug:
             print(f" Predicted sentiment scores: {results}")
 
         return results
 
-    # Main function starts here!
+    # Step 5: Main execution
     article_data = extract_articles(url, unwanted_keywords)
 
     if not article_data["content"]:
@@ -451,7 +447,6 @@ def process_article_for_sentiment_analysis(url, debug=False):
 
     # Get sentiment predictions for country pairs in the article
     sentiment_scores = predict_all_pairs(article_data["content"], debug=debug)
-
     return sentiment_scores, publish_year
 
 # TGNN side
