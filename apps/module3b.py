@@ -98,7 +98,23 @@ layout = html.Div([
     dcc.Store(id="trade-type-select8abc", data='total'),
     dcc.Store(id="display-mode8abc", data='volume'),
 
-    html.H2("Sector Trade Trends Over Time (Partner-Centric View)", className="text-center mb-4"),
+    html.H2("Country Share Trend", className="text-center mb-4"),
+
+    html.Div(
+        html.H6(
+            """
+            Analyze how different trading partners contribute to a sector's trade over time. 
+            Use this tool to uncover shifts in trade concentration, partner dynamics, and changing regional importance within a selected sector.
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4', 
+                'marginBottom': '24px'
+                    }
+                )
+            ),
 
     html.Div([
         html.Div([
