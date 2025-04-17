@@ -664,7 +664,7 @@ layout = html.Div([
     dcc.Store(id="trade-type-select1c", data='total'),
     dcc.Store(id="display-type1c", data='percentage'),
 
-    html.H1("Trade by Sector: Partner Country Breakdown", className="text-center mb-4", style={'color': '#2c3e50'}),
+    html.H1("Country Share Breakdown", className="text-center mb-4", style={'color': '#2c3e50'}),
 
     html.Div(
         html.H6(
