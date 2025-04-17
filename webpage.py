@@ -75,9 +75,9 @@ navbar = dbc.Navbar(
                     dbc.DropdownMenuItem("Sector Share Breakdown", href="/module1a"),
                     dbc.DropdownMenuItem("Sector Share Trend", href="/module1b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
-                dbc.DropdownMenu(label="Geopolitical Distance", children=[
+                dbc.DropdownMenu(label="Geopolitical Relations", children=[
                     dbc.DropdownMenuItem("Trade Balance by Year", href="/module4a"),
-                    dbc.DropdownMenuItem("Trade Volume over Time", href="/module4b"),
+                    dbc.DropdownMenuItem("Trade Dependence over Time", href="/module4b"),
                 ], nav=True, in_navbar=True, className="mx-3"),
                 dbc.NavItem(dbc.NavLink("News Impact on Forecast", href="/module5", className="mx-3", active="exact")),
             ], className="ms-auto", navbar=True),

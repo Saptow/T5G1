@@ -88,9 +88,9 @@ def get_filtered_countries(df, reporter_country, num_countries, order, metric, s
 # === Main Layout (Graph only) ===
 layout = html.Div([
 
-    html.H2("How does an economy's trade balance with its trading partners compare against their geopolitical alignment?"),
+    html.H1("How does an economy's trade balance vary with its geopolitical alignment to trading partners?"),
 
-    html.H5("Explore how an economy's trade balance and geopolitical alignment varies across different trading partners."),
+    html.H5("Explore how an economy's trade balance and geopolitical alignment varies across its different trading partners."),
 
     html.H6("""
 In this visualisation, we assess geopolitical alignment between trading partners using UN voting records. 

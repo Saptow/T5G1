@@ -123,6 +123,8 @@ layout = html.Div([
                 "width": "100%",
                 "height": "100%",
                 "backgroundColor": "rgba(0, 0, 0, 0.6)",
+                # "backgroundImage": "url('/homepage.png')",
+                # "backgroundSize": "cover",
                 "zIndex": 10,
                 "display": "flex",
                 "justifyContent": "center",
@@ -136,7 +138,8 @@ layout = html.Div([
 
         # === Main Page Content ===
         html.Div(id="main-page-content", children=[
-            html.H2("Sectoral Growth Opportunities After Geopolitical Shock", className="text-center mb-3"),
+            html.H2("Which countries and sectors are most impacted from this development?", className="mb-3"),
+            html.H5("View in real-time the biggest winners and losers from this news, across countries and sectors"),
             html.Div([
                 # 1. Toggle Switch Section
             html.Div([
@@ -213,12 +216,15 @@ def toggle_overlay(processed_data):
         "left": 0,
         "width": "100%",
         "height": "100%",
-        "backgroundColor": "white",
+        "backgroundColor": "rgba(0, 0, 0, 0.6)",
+        "backgroundImage": "url('/assets/homepage.png')",
+        # "backgroundSize": "cover",
+        # "backgroundColor": "white",
         "zIndex": 9999,
         "display": "flex",
         "justifyContent": "center",
         "alignItems": "center",
-        "fontSize": "1.5rem",
+        "fontSize": "2rem",
         "fontWeight": "bold",
         "color": "black",
     }
