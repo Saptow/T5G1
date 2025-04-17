@@ -666,6 +666,23 @@ layout = html.Div([
 
     html.H1("Trade by Sector: Partner Country Breakdown", className="text-center mb-4", style={'color': '#2c3e50'}),
 
+    html.Div(
+        html.H6(
+            """
+            Dive into detailed sector-level trade flows between a selected country and its trading partners. 
+            Customize your view by choosing specific sectors, trade types (Total, Exports, Imports), and how trade is measured—by absolute volume or percentage share. 
+            Use this tool to identify key contributors and shifts in bilateral trade relationships across different economic sectors.
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4', 
+                'marginBottom': '24px'
+                    }
+                )
+            ),
+            
     html.Div([
         html.Div([
             html.Label("Select a Country", className="form-label fw-semibold mb-1"),
