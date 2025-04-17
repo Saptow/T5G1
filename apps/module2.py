@@ -73,9 +73,26 @@ iso_to_country = {v: k for k, v in country_iso.items()}
 
 layout = html.Div([
     html.H1(
-        "Who are Singapore's top trading partners by sector and trade value?", className="mb-4"),
+        "Singapore Trade Map Viewer", className="mb-4 text-center"),
 
-    html.H5("Explore how Singapore’s trade relationships evolved over time."),
+    html.Div(
+        html.H6(
+            """
+            Explore how Singapore’s relationships with its trading partners evolved over time. 
+            Select across different years to compare, direction of trade and metrics to determine trade value. 
+            Vary country choices by customising country choices or filter for the top few countries. 
+            Choose sectors with ease through dropdown selection.
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4', 
+                'marginBottom': '24px'
+            }
+        )
+    ),
+
 
     # ==== Row 1 ====
     html.Div([
