@@ -65,9 +65,25 @@ app = get_app()
 
 # Layout
 layout = html.Div([
-    html.H2("How have geopolitical relations and trade dependence between economies evolved over time?"),
+    html.H1("Geopolitical Distance vs Trade Balance over Time", className="mb-4 text-center"),
 
-    html.H5("Explore how an economy's trade flow with its trading partner has changed with respect to their geopolitical distance."),
+    html.Div(
+        html.H6(
+            """
+            Explore how Singapore’s relationships with its trading partners evolved over time. 
+            Select across different years to compare, direction of trade and metrics to determine trade value. 
+            Vary country choices by customising country choices or filter for the top few countries. 
+            Choose sectors with ease through dropdown selection.
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4', 
+                'marginBottom': '24px'
+            }
+        )
+    ),
 
     html.Div([
 
