@@ -88,131 +88,146 @@ def get_filtered_countries(df, reporter_country, num_countries, order, metric, s
 # === Main Layout (Graph only) ===
 layout = html.Div([
 
-    html.H1("How does an economy's trade balance vary with its geopolitical alignment to trading partners?"),
-
-    html.H5("Explore how an economy's trade balance and geopolitical alignment varies across its different trading partners."),
-
-    html.H6("""
-In this visualisation, we assess geopolitical alignment between trading partners using UN voting records. 
-Following a method by Bailey et al. (2017), each country’s political stance is estimated annually, 
-and the distance between these positions reflects how closely aligned two countries are — greater distance means less alignment.
-""", className="text-muted ms-2"),
-
-    html.Div([
-
-    html.Label("Select Year:"),
-    dcc.Dropdown(
-        id='year-dropdown',
-        options=[{"label": str(year), "value": year} for year in years],
-        value=max(years),  # Default to the most recent year
-        clearable=False,
-        style={"width": "100%"},
-        className="mb-3"
+    # Title
+    html.H1(
+        "Geopolitical Distance vs Trade Balance by Year",  
+        className="mb-4 text-center"
     ),
 
-    html.Div([
-        html.Div([
-            html.Label("Select Economy:"),
-            dcc.Dropdown(
-                id='reporter-selector',
-                options=[{'label': country, 'value': country} for country in sorted(df["CountryA"].unique())],
-                value="Singapore",
-                clearable=False,
-                style={"width": "100%"}
-            )
-        ], className="me-3", style={"width": "49%", "display": "inline-block"}),
-
-        html.Div([
-            html.Label("Select Trading Partners:"),
-            dcc.Dropdown(
-                id='country-selector',
-                options=[{'label': country, 'value': country} for country in sorted(df["CountryB"].unique())],
-                multi=True,
-                value=["China", "United States", "Malaysia", "Indonesia", "South Korea"],
-                style={"color": "black", "backgroundColor": "white", "width": "100%"}
-            )
-        ], style={"width": "49%", "display": "inline-block"}),
-    ], className="mb-3"
-    ),
-
-    html.Label("Move slider to select the top N trading partners to be visualised below (Clear the Select Trading Partners filter first):"),
-    dcc.Slider(
-        id='num-countries',
-        min=0,
-        max=10,
-        step=1,
-        value=0,  # Default value
-        marks={i: str(i) for i in range(0, 11)},
-        tooltip={"placement": "bottom", "always_visible": True},
+    # Description box
+    html.Div(
+        html.H6(
+            """
+            Explore how an economy’s trade balance and geopolitical alignment vary across its different trading partners. 
+            This visualisation assesses alignment based on annual UN voting records, following the methodology of Bailey et al. (2017). 
+            Each country’s political stance is estimated yearly, and the geopolitical distance reflects how closely aligned two countries are—greater distance indicates less alignment. 
+            Use the chart to examine how political proximity correlates with trade surplus or deficit across top trading partners.
+            """,
+            style={
+                'color': '#333333',
+                'fontSize': '16px',
+                'fontFamily': 'Lato, sans-serif',
+                'lineHeight': '1.4',
+                'marginBottom': '24px'
+            }
+        ),
         className="mb-4"
     ),
 
-    dbc.Row([
-    dbc.Col(
+    # Year selector + Economy & Partner dropdowns + Slider
+    html.Div([
+        html.Label("Select Year:"),
+        dcc.Dropdown(
+            id='year-dropdown',
+            options=[{"label": str(year), "value": year} for year in years],
+            value=max(years),
+            clearable=False,
+            style={"width": "100%"},
+            className="mb-3"
+        ),
+
         html.Div([
-            html.Label("Select Magnitude:", className="me-2"),
-            dbc.ButtonGroup(
-                [
+            html.Div([
+                html.Label("Select Economy:"),
+                dcc.Dropdown(
+                    id='reporter-selector',
+                    options=[{'label': c, 'value': c} for c in sorted(df["CountryA"].unique())],
+                    value="Singapore",
+                    clearable=False,
+                    style={"width": "100%"}
+                )
+            ], className="me-3", style={"width": "49%", "display": "inline-block"}),
+
+            html.Div([
+                html.Label("Select Trading Partners:"),
+                dcc.Dropdown(
+                    id='country-selector',
+                    options=[{'label': c, 'value': c} for c in sorted(df["CountryB"].unique())],
+                    multi=True,
+                    value=["China", "United States", "Malaysia", "Indonesia", "South Korea"],
+                    style={"width": "100%"}
+                )
+            ], style={"width": "49%", "display": "inline-block"}),
+        ], className="mb-3"),
+
+        html.Label(
+            "Move slider to select the top N trading partners to be visualised below "
+            "(Clear the Select Trading Partners filter first):"
+        ),
+        dcc.Slider(
+            id='num-countries',
+            min=0, max=10, step=1, value=0,
+            marks={i: str(i) for i in range(11)},
+            tooltip={"placement": "bottom", "always_visible": True},
+            className="mb-4"
+        ),
+    ]),
+
+    # Buttons row
+    dbc.Row([
+        dbc.Col(
+            html.Div([
+                html.Label("Select Magnitude:", className="me-2"),
+                dbc.ButtonGroup([
                     dbc.Button("Smallest", id="btn-smallest", n_clicks=0, color="secondary", outline=True),
                     dbc.Button("Largest", id="btn-largest", n_clicks=0, color="primary", outline=True)
-                ],
-                id="order-btn-group"
-            )
-        ]),
-        width=6
-    ),
-    dbc.Col(
-        html.Div([
-            html.Label("Select Category:", className="me-2"),
-            dbc.ButtonGroup(
-                [
-                    dbc.Button("Geopolitical Distance", id="btn-distance", n_clicks=0, color = "primary", outline=True),
-                    dbc.Button("Trade Surplus", id="btn-surplus", n_clicks=0,color = "secondary", outline=True),
-                    dbc.Button("Trade Deficit", id="btn-deficit", n_clicks=0, color = "secondary", outline=True),
-                ],
-                id="metric-btn-group"
-            ),
-            html.Small(
-                "Category is fixed to 'Geopolitical Distance' when order is 'Smallest'",
-                className="text-muted fst-italic ms-2")
-        ], id="metric-group-div"),
-        width=6
-    )
-], className="mb-3"),
-#     html.Div(
-#     "The size of the bubbles reflects reporter’s total trade value with the trading partner. "
-#     "The center point (white circle) of each bubble reflects reporter’s trade balance with the trading partner.",
-#     style={
-#         "fontSize": "0.9rem",
-#         "fontStyle": "italic",
-#         "color": "#555",
-#         "marginTop": "10px",
-#         "textAlign": "center"
-#     }
-# )
-]),
-    #dcc.Graph(id='trade-graph'),
-    
+                ], id="order-btn-group")
+            ]),
+            width=6
+        ),
+
+        dbc.Col(
+            html.Div([
+                # label + buttons on one line
+                html.Div([
+                    html.Label("Select Category:", className="me-2"),
+                    dbc.ButtonGroup(
+                        [
+                            dbc.Button("Geopolitical Distance", id="btn-distance", n_clicks=0, color="primary", outline=True),
+                            dbc.Button("Trade Surplus",           id="btn-surplus",  n_clicks=0, color="secondary", outline=True),
+                            dbc.Button("Trade Deficit",           id="btn-deficit",  n_clicks=0, color="secondary", outline=True),
+                        ],
+                        id="metric-btn-group",
+                        className="me-2"
+                    ),
+                ], className="d-flex align-items-center"),
+
+                # note moved below, with top margin
+                html.Small(
+                    "Category is fixed to 'Geopolitical Distance' when order is 'Smallest'",
+                    className="d-block text-muted fst-italic mt-2 ms-2"
+                )
+            ]),
+            width=6
+        ),
+    ]),
+
+    # Hidden Stores & Tabs & Placeholder graph
     dcc.Store(id='order-selector', data='largest'),
     dcc.Store(id='metric-selector', data='Geopolitical Distance'),
 
     html.Div(id="tab-warning4a", className="text-danger mb-2 text-center"),
 
-    dcc.Tabs(id="module4a-tabs", value="historical", children=[
-         dcc.Tab(label="Historical", value="historical"),
-         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab4a", disabled=True),
-     ]),
-    
-    html.Div(id="module4a-tabs-container"),
+    dcc.Tabs(
+        id="module4a-tabs",
+        value="historical",
+        children=[
+            dcc.Tab(label="Historical", value="historical"),
+            dcc.Tab(label="Prediction",  value="prediction", id="prediction-tab4a", disabled=True),
+        ]
+    ),
 
+    html.Div(id="module4a-tabs-container"),
     html.Div(id="module4a-tab-content", className="mt-3"),
-    # === Hidden dummy components to make Dash recognize outputs ===
+
+    # Dummy Div to satisfy hidden callbacks
     html.Div([
         html.Div(id='sector-title4a', style={'display': 'none'}),
-        dcc.Graph(id='trade-graph', style={'display': 'none'}),
+        dcc.Graph(id='trade-graph',    style={'display': 'none'}),
     ], style={'display': 'none'})
 
 ])
+
 
 ### Callback to fix trade metric to Geopolitical Distance when smallest is chosen
 @app.callback(
