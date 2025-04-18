@@ -65,7 +65,7 @@ app = get_app()
 
 # Layout
 layout = html.Div([
-    html.H1("Geopolitical Distance vs Trade Balance over Time", className="mb-4 text-center"),
+    html.H1("Geopolitical Distance vs Total Trade over Time", className="mb-4 text-center"),
 
     html.Div(
         html.H6(
