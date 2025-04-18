@@ -6,7 +6,8 @@ warnings.filterwarnings("ignore", message="A nonexistent object was used in an `
 import dash
 from dash import dcc, html, Output, Input, callback_context, State
 import dash_bootstrap_components as dbc
-from dash import ctx
+from dash import ctx, callback_context
+
 
 # Initialize
 app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.LUX])
@@ -348,13 +349,15 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
     if ctx_id == "submit-url" and url_value and url_value.strip():
         url_to_post = url_value.strip()
         try:
-            # response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-            # response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
             
-            # response_data = response.json() if response.content else {} # Returns the dictionary 
+            response_data = response.json() #if response.content else {} # Returns the dictionary 
             response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
             message = f"✅ Input successfully registered."
-            return True, url_to_post, message, response  # Return the response data as well
+            return True, url_to_post, message, response_data  # Return the response data as well
         except Exception as e:
             # In case of an error, log or use a custom error message.
             message = f"❌ Failed to register input: {e}"
@@ -369,16 +372,38 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
     
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
+#@app.callback(
+    #Output("input-status-message", "children", allow_duplicate=True),
+   # Input("submit-url", "n_clicks"),
+    #prevent_initial_call=True
+#)
+#def show_loading_message(n_clicks):
+    #if n_clicks:
+     #   return "⏳ The page is now loading. Please wait until input is registered to toggle through the visualisations."
+    #return dash.no_update
+
+
 @app.callback(
-    Output("input-status-message", "children", allow_duplicate=False),
+    Output("input-status-message", "children"),
+    Input("submit-url", "n_clicks"),
     Input("input-uploaded", "data"),
-    prevent_initial_call=False
 )
-def set_default_status(uploaded):
+def update_status(n_clicks, uploaded):
+    # figure out which Input triggered us
+    ctx = callback_context
+    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
+
+    # 1) if they literally just clicked “Go”, show loading
+    if triggered_id == "submit-url":
+        return "⏳ The page is now loading. Please wait until input is registered to toggle through the visualisations."
+
+    # 2) if the store flipped to uploaded, show success
     if uploaded:
         return "✅ Input already registered"
-    else:
-        return "ℹ️ No article uploaded yet"
+
+    # 3) otherwise, the default message
+    return "ℹ️ No article uploaded yet"
+
 
 
 # @app.callback(
