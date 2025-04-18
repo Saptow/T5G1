@@ -1,10 +1,4 @@
-## Module 3a for test
-
-import pandas as pd
-import plotly.express as px
-from dash import dcc, html, Input, Output, State, callback_context, get_app
-import dash
-import dash_bootstrap_components as dbc
+## Module 3a 
 
 import pandas as pd
 import plotly.express as px
@@ -43,7 +37,6 @@ SECTOR_LABELS = {
 }
 
 COUNTRY_LABELS = {
-    "ARE": "United Arab Emirates",
     "AUS": "Australia",
     "CHE": "Switzerland",
     "CHN": "China",
@@ -65,87 +58,6 @@ COUNTRY_LABELS = {
 COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
 COUNTRY_LIST = sorted(COUNTRY_LABELS.values())
 
-# layout = html.Div([
-#     #dcc.Store(id="input-uploaded"),
-#     dcc.Store(id="trade-type-select1b", data='total'),
-#     dcc.Store(id="display-type1b", data='percentage'),
-
-#     html.H1("Countries' Trade Breakdown by Sector", className="text-center mb-4", style={'color': '#2c3e50'}),
-
-#     html.Div([
-#         html.Div([
-#             html.Label("Select a Country", className="form-label fw-semibold mb-1"),
-#             dcc.Dropdown(
-#                 id='country-select1b',
-#                 options=[{'label': c, 'value': c} for c in COUNTRY_LIST],
-#                 value= 'Singapore',
-#                 placeholder='Select a Country',
-#                 className="mb-3",
-#                 style={"width": "100%"}
-#             )
-#         ], className="col-md-6"),
-
-#         html.Div([
-#             html.Label("Partner Country", className="form-label fw-semibold mb-1"),
-#             dcc.Dropdown(
-#                 id='country-select-alt21b',
-#                 style={"color": "black", "backgroundColor": "white", "width": "100%"},
-#                 placeholder="Select partner country",
-#                 searchable=True,
-#                 className="mb-3"
-#             )
-#         ], className="col-md-6")
-#     ], className="row mb-3"),
-
-#     html.Div([
-#         html.Div([
-#     html.Div([
-#                 html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
-#                 daq.ToggleSwitch(
-#                     id='toggle-display1b',
-#                     label='Volume / Percentage Share',
-#                     value=True,
-#                     className="mb-2",
-#                     size=60)
-#         ], className="col-md-6 d-flex flex-column align-items-center"),
-#         html.Div([
-#             html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
-#             dbc.ButtonGroup([
-#                 dbc.Button("Trade Volume", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
-#                 dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
-#                 dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
-#             ], className='w-100')
-#         ], className="col-md-6"),
-
-#         # html.Div([
-#         #     html.Label("Display Type", className="form-label fw-semibold mb-1"),
-#         #     daq.ToggleSwitch(
-#         #         id='toggle-display1b',
-#         #         label='Percentage / Volume',
-#         #         value=True,
-#         #         className="mb-2"
-#         #     )
-#         # ], className="col-md-6"),
-        
-
-#     ], className="row mb-4")
-#     ]),
-
-#     html.Div(id="tab-warning1b", className="text-danger mb-2 text-center"),
-
-#     dcc.Tabs(id="module1b-tabs", value="historical", children=[
-#         dcc.Tab(label="Historical", value="historical"),
-#         dcc.Tab(label="Prediction", value="prediction", id="prediction-tab1b", disabled=True),
-#     ]),
-
-#     html.Div(id="module1b-tab-content", className="mt-3"),
-
-#     html.Div([
-#         html.Div(id='country-title1b', style={'display': 'none'}),
-#         dcc.Graph(id='country-treemap1b', style={'display': 'none'}),
-#         dcc.Graph(id='country-bar1b', style={'display': 'none'})
-#     ], style={'display': 'none'})
-# ])
 # new layout trial 
 layout = html.Div([
     dcc.Store(id="trade-type-select1b", data='total'),
@@ -195,26 +107,26 @@ layout = html.Div([
 
     html.Div([
         html.Div([
-            html.Label("Select Direction of Trade:", className="form-label fw-semibold mb-1"),
             html.Div([
                 html.Div([
+                    html.Label("Trade Type:", className="form-label fw-semibold mb-1 text-center w-100"),
                     dbc.ButtonGroup([
-                        dbc.Button("Total Trade", id='btn-total1b', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                        dbc.Button("Total Trade", id='btn-total1b', n_clicks=0, outline=False, size='sm', color='primary', style={'border': '1px solid #ccc'}),
                         dbc.Button("Exports", id='btn-export1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'}),
                         dbc.Button("Imports", id='btn-import1b', n_clicks=0, outline=True, size='sm', style={'border': '1px solid #ccc'})
                     ], className='w-100')
-                ], className="col-md-9"),
+                ], className="col-md-6"),
 
                 html.Div([
-                    html.Label("Select Visualisation Type", className="form-label fw-semibold mb-1"),
+                    html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
                     daq.ToggleSwitch(
                         id='toggle-display1b',
-                        label='Bar Chart / Tree Map',
+                        label='Volume / Percentage Share',
                         value=True,
                         className="mt-1",
                         size=60
                     )
-                ], className="col-md-3 d-flex flex-column align-items-center justify-content-center")
+                ], className="col-md-6 d-flex flex-column align-items-center justify-content-center")
             ], className="row")
         ], className="mb-4"),
         ]),
@@ -245,6 +157,9 @@ app = get_app()
     Output('btn-total1b', 'color'),
     Output('btn-export1b', 'color'),
     Output('btn-import1b', 'color'),
+    Output('btn-total1b', 'outline'),
+    Output('btn-export1b', 'outline'),
+    Output('btn-import1b', 'outline'),
     Input('btn-total1b', 'n_clicks'),
     Input('btn-export1b', 'n_clicks'),
     Input('btn-import1b', 'n_clicks'),
@@ -253,12 +168,12 @@ app = get_app()
 def update_trade_type(n_total, n_export, n_import):
     ctx = callback_context.triggered_id
     if ctx == 'btn-total1b':
-        return 'total', 'primary', 'secondary', 'secondary'
+        return 'total', 'primary', 'secondary', 'secondary', False, True, True
     elif ctx == 'btn-export1b':
-        return 'export', 'secondary', 'primary', 'secondary'
+        return 'export', 'secondary', 'primary', 'secondary', True, False, True
     elif ctx == 'btn-import1b':
-        return 'import', 'secondary', 'secondary', 'primary'
-    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return 'import', 'secondary', 'secondary', 'primary', True, True, False
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 @app.callback(
     Output('display-type1b', 'data'),
@@ -286,59 +201,10 @@ def switch_to_prediction_tab(uploaded):
 
 
 
-
-# def render_tab_content(tab, display_type):
-#     if tab == "historical":
-#         return html.Div([
-#             html.Div(style={'marginTop': '20px'}),
-#             html.H5(id='country-title1b', className="text-center mb-2"),
-#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'percentage' else 'none'}),
-#             dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white", 'display': 'block' if display_type == 'volume' else 'none'})
-#         ])
-#     elif tab == "prediction":
-#         return html.Div([
-#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
-#         ])
-
-# @app.callback(
-#     Output("module1b-tab-content", "children"),
-#     Input("module1b-tabs", "value"),
-#     #State('display-type1b', 'data')
-# )
-
-# def render_tab_content(tab, display_type):
-#     if tab == "historical":
-#         treemap_style = {"backgroundColor": "white", 'display': 'block' if display_type == 'percentage' else 'none'}
-#         bar_style = {"backgroundColor": "white", 'display': 'block' if display_type == 'volume' else 'none'}
-#         return html.Div([
-#             html.Div(style={'marginTop': '20px'}),
-#             html.H5(id='country-title1b', className="text-center mb-2"),
-#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style=treemap_style),
-#             dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style=bar_style)
-#         ])
-#     elif tab == "prediction":
-#         return html.Div([
-#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
-#         ])
 @app.callback(
     Output("module1b-tab-content", "children"),
     Input("module1b-tabs", "value")
 )
-# def render_tab_content(tab):
-#     if tab == "historical":
-#         return html.Div([
-#             html.Div(style={'marginTop': '20px'}),
-#             html.H5(id='country-title1b', className="text-center mb-2"),
-#             dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
-#             dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white"})
-#         ])
-#     elif tab == "prediction":
-#         return html.Div([
-#             html.H4("Prediction Results Coming Soon!", className="text-center mt-4"),
-#             html.P("This will show trade predictions based on uploaded news input.", className="text-center")
-#         ])
 
 def render_tab_content(tab):
     return html.Div([
@@ -347,94 +213,6 @@ def render_tab_content(tab):
         dcc.Graph(id='country-treemap1b', config={'displayModeBar': False}, style={"backgroundColor": "white"}),
         dcc.Graph(id='country-bar1b', config={'displayModeBar': False}, style={"backgroundColor": "white"})
     ])
-
-# # Temp Comment Out   
-# @app.callback(
-#     Output('country-treemap1b', 'figure'),
-#     Output('country-bar1b', 'figure'),
-#     Output('country-select-alt21b', 'options'),
-#     Output('country-title1b', 'children'),
-#     Input('country-select1b', 'value'),
-#     Input('trade-type-select1b', 'data'),
-#     Input('country-select-alt21b', 'value')
-# )
-# def update_visualizations(selected_country, trade_type, selected_partner):
-
-#     country_id = COUNTRY_NAMES[selected_country]
-
-#     latest_year = df_raw['year'].max()
-#     prev_year = df_raw['year'][df_raw['year'] < latest_year].max()
-
-#     filtered = df[(df['country_a'] == country_id) | (df['country_b'] == country_id)].copy()
-
-#     filtered['partner_country_code'] = filtered.apply(
-#         lambda row: row['country_b'] if row['country_a'] == country_id else row['country_a'], axis=1
-#     )
-
-#     filtered['partner_country'] = filtered['partner_country_code'].map(COUNTRY_LABELS)
-
-#     partner_options = [
-#     {'label': name, 'value': name}
-#     for name in sorted(filtered['partner_country'].unique())
-#     if name != selected_country
-#     ]  
-
-#     if selected_partner:
-#         view = filtered[filtered['partner_country'] == selected_partner]
-#     else:
-#         view = filtered
-
-#     filtered['partner_country'] = filtered.apply(
-#         lambda row: row['country_b'] if row['country_a'] == selected_country else row['country_a'], axis=1
-#     )
-
-#     view.attrs['trade_type'] = trade_type
-#     view.attrs['direction'] = 'A_to_B'  # all data is from A to B, already included both ways
-
-#     sector_agg = calculate_percentages(view, 'sector')
-
-#     display_trade_type = "Trade Volume" if trade_type == "total" else trade_type.capitalize()
-    
-#     if selected_partner:
-#         title = f"{display_trade_type} from {selected_country} to {selected_partner} by Sector in {latest_year}"
-#     else:
-#         title = f"{selected_country}'s {display_trade_type} by Sector in {latest_year}"
-
-#     for df_agg in [sector_agg]:
-#         df_agg['percentage'] = df_agg['percentage'].round(1)
-#         df_agg['change_str'] = df_agg['change'].apply(lambda x: f"{x:+.2f}%")
-#         df_agg['previous_pct'] = df_agg['previous_volume'] / df_agg['previous_volume'].sum() * 100
-#         df_agg['previous_pct_str'] = df_agg['previous_pct'].round(1).astype(str) + '%'
-
-
-#     max_change = sector_agg['change'].abs().max() * 5
-
-#     hover_template = (
-#     '<b>%{label}</b><br>'
-#     'Current Share (' + str(latest_year) + '): %{customdata[0]}<br>'
-#     'Previous Share (' + str(prev_year) + '): %{customdata[1]}<br>'
-#     'Change in Percentage Share: %{customdata[2]}'
-#     )
-
-
-#     fig_treemap = px.treemap(
-#         sector_agg, path=['sector'], values='percentage', color='change_clipped',
-#         color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-#         range_color=[-max_change, max_change], color_continuous_midpoint=0,
-#         custom_data=['percentage', 'previous_pct_str', 'change_str']
-#         )
-    
-#     fig_treemap.update_traces(
-#         hovertemplate=hover_template,
-#         texttemplate='<b>%{label}</b><br>%{customdata[0]} (%{customdata[2]})'
-#     )
-
-#     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
-
-#     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
-
-#     return fig_treemap, fig_bar, partner_options, title
-## Comment End
 
 @app.callback(
     Output('country-treemap1b', 'style'),
@@ -448,72 +226,6 @@ def toggle_graph_visibility(display_type):
 
 
 # === Helpers ===
-
-# def calculate_percentages(data, group_by):
-#     grouped = data.groupby(group_by, as_index=False).agg({
-#         'volume': 'sum',
-#         'previous_volume': 'sum'
-#     })
-#     total_current = data['volume'].sum()
-#     total_previous = data['previous_volume'].sum()
-#     grouped['percentage'] = 100 * grouped['volume'] / total_current if total_current else 0
-#     grouped['change'] = (
-#         100 * (grouped['volume'] / total_current - grouped['previous_volume'] / total_previous)
-#         if total_current and total_previous else 0
-#     )
-#     max_abs_change = grouped['change'].abs().max()
-#     dynamic_range = max(1, round(max_abs_change * 5, 2))
-#     grouped['change_clipped'] = grouped['change'].clip(lower=-dynamic_range, upper=dynamic_range)
-#     grouped['dynamic_range'] = dynamic_range
-#     return grouped
-
-# def calculate_percentages(data, group_by, latest_year, prev_year):
-#     #latest_year = data['year'].max()
-#     #prev_year = data['year'][data['year'] < latest_year].max()
-
-#     trade_type = data.attrs.get('trade_type', 'total')
-
-#     if trade_type == 'export':
-#         sector_cols = [f"bec_{i}_export_A_to_B" for i in range(1, 9)]
-#     elif trade_type == 'import':
-#         sector_cols = [f"bec_{i}_import_A_from_B" for i in range(1, 9)]
-#     else:  # total = export + import
-#         sector_cols = [f"bec_{i}_export_A_to_B" for i in range(1, 9)] + \
-#                       [f"bec_{i}_import_A_from_B" for i in range(1, 9)]
-
-#     # Group by year
-#     current = data[data['year'] == latest_year][sector_cols].sum()
-#     previous = data[data['year'] == prev_year][sector_cols].sum()
-
-#     sector_agg = pd.DataFrame({
-#         'sector_code': sector_cols,
-#         'volume': current.values,
-#         'previous_volume': previous.values
-#     })
-
-#     # Combine duplicates if total (export + import)
-#     if trade_type == 'total':
-#         sector_agg['sector'] = sector_agg['sector_code'].str.extract(r'(bec_\d+)_')[0]
-#         sector_agg = sector_agg.groupby('sector', as_index=False).agg({
-#             'volume': 'sum',
-#             'previous_volume': 'sum'
-#         })
-#     else:
-#         sector_agg['sector'] = sector_agg['sector_code'].str.extract(r'(bec_\d+)_')[0]
-
-#     total_volume = sector_agg['volume'].sum()
-#     total_previous = sector_agg['previous_volume'].sum()
-
-#     sector_agg['percentage'] = 100 * sector_agg['volume'] / total_volume if total_volume else 0
-#     sector_agg['change'] = (
-#         100 * (sector_agg['volume'] / total_volume - sector_agg['previous_volume'] / total_previous)
-#         if total_volume and total_previous else 0
-#     )
-#     sector_agg['change_clipped'] = sector_agg['change'].clip(lower=-50, upper=50)
-#     sector_agg['dynamic_range'] = 50
-#     sector_agg['sector'] = sector_agg['sector'].map(SECTOR_LABELS)
-
-#     return sector_agg
 
 def calculate_percentages(data, group_by, latest_year, prev_year):
     trade_type = data.attrs.get('trade_type', 'total')
@@ -589,221 +301,13 @@ def generate_bar_chart(df, x_col, y_col, previous_col, latest_year, prev_year):
 sidebar_controls = html.Div([])
 
 
-### INSERT PREDICTION TAB CODE AND DATA MANGLING HERE
-
-# # === PREDICTION DATA PREPARATION ===
-# new_df = pd.read_csv('sample_2026.csv')
 
 # Get only latest year from historical data
 historical_latest = df_raw[df_raw['year'] == df_raw['year'].max()].copy()
 
-# new_df = new_df[new_df['scenario'] == 'postshock'].copy()
-# new_df.drop(columns=['scenario'], inplace=True)
-
-# # Step 2: Ensure column alignment
-# new_df = new_df[historical_latest.columns]
-
-# # Step 3: Ensure all numeric columns are converted
-# for col in new_df.columns:
-#     if col not in ['country_a', 'country_b', 'year']:
-#         new_df[col] = pd.to_numeric(new_df[col], errors='coerce')
-
-# for col in historical_latest.columns:
-#     if col not in ['country_a', 'country_b', 'year']:
-#         historical_latest[col] = pd.to_numeric(historical_latest[col], errors='coerce')
-
-# # Merge the two datasets
-# merged_prediction_df = pd.concat([historical_latest, new_df], ignore_index=True)
-# merged_prediction_df = merged_prediction_df.round(2)
-
-
-# Commenting Out
-# @app.callback(
-#     Output('country-treemap1b', 'figure'),
-#     Output('country-bar1b', 'figure'),
-#     Output('country-select-alt21b', 'options'),
-#     Output('country-title1b', 'children'),
-#     Input('country-select1b', 'value'),
-#     Input('trade-type-select1b', 'data'),
-#     Input('country-select-alt21b', 'value'),
-#     Input('module1b-tabs', 'value')
-# )
-# def update_visualizations_with_prediction(selected_country, trade_type, selected_partner, active_tab):
-#     if active_tab == "prediction":
-#         df_view = merged_prediction_df
-#     else:
-#         df_view = df
-
-#     country_id = COUNTRY_NAMES[selected_country]
-
-#     filtered = df_view[(df_view['country_a'] == country_id) | (df_view['country_b'] == country_id)].copy()
-
-#     filtered['partner_country_code'] = filtered.apply(
-#         lambda row: row['country_b'] if row['country_a'] == country_id else row['country_a'], axis=1
-#     )
-#     filtered['partner_country'] = filtered['partner_country_code'].map(COUNTRY_LABELS)
-
-#     partner_options = [
-#         {'label': name, 'value': name}
-#         for name in sorted(filtered['partner_country'].unique())
-#         if name != selected_country
-#     ]
-
-#     if selected_partner:
-#         view = filtered[filtered['partner_country'] == selected_partner]
-#     else:
-#         view = filtered
-
-#     latest_year = view['year'].max()
-#     prev_year = view['year'][view['year'] < latest_year].max()
-
-#     view.attrs['trade_type'] = trade_type
-
-#     sector_agg = calculate_percentages(view, 'sector')
-
-#     display_trade_type = "Trade Volume" if trade_type == "total" else trade_type.capitalize()
-#     if selected_partner:
-#         title = f"{display_trade_type} from {selected_country} to {selected_partner} by Sector in {latest_year}"
-#     else:
-#         title = f"{selected_country}'s {display_trade_type} by Sector in {latest_year}"
-
-#     sector_agg['percentage'] = sector_agg['percentage'].round(1)
-#     sector_agg['change_str'] = sector_agg['change'].apply(lambda x: f"{x:+.2f}%")
-#     sector_agg['previous_pct'] = sector_agg['previous_volume'] / sector_agg['previous_volume'].sum() * 100
-#     sector_agg['previous_pct_str'] = sector_agg['previous_pct'].round(1).astype(str) + '%'
-
-#     max_change = sector_agg['change'].abs().max() * 5
-
-#     hover_template = (
-#         '<b>%{label}</b><br>'
-#         'Current Share (' + str(latest_year) + '): %{customdata[0]}<br>'
-#         'Previous Share (' + str(prev_year) + '): %{customdata[1]}<br>'
-#         'Change in Percentage Share: %{customdata[2]}'
-#     )
-
-#     fig_treemap = px.treemap(
-#         sector_agg, path=['sector'], values='percentage', color='change_clipped',
-#         color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-#         range_color=[-max_change, max_change], color_continuous_midpoint=0,
-#         custom_data=['percentage', 'previous_pct_str', 'change_str']
-#     )
-#     fig_treemap.update_traces(
-#         hovertemplate=hover_template,
-#         texttemplate='<b>%{label}</b><br>%{customdata[0]} (%{customdata[2]})'
-#     )
-#     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
-
-#     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
-
-#     return fig_treemap, fig_bar, partner_options, title
-
-# @app.callback(
-#     Output('country-treemap1b', 'figure'),
-#     Output('country-bar1b', 'figure'),
-#     Output('country-select-alt21b', 'options'),
-#     Output('country-title1b', 'children'),
-#     Input('country-select1b', 'value'),
-#     Input('trade-type-select1b', 'data'),
-#     Input('country-select-alt21b', 'value'),
-#     Input('module1b-tabs', 'value')  # this lets us switch dataset
-# )
-# def update_all_visualizations(selected_country, trade_type, selected_partner, tab):
-#     # === Select dataset ===
-#     if tab == 'prediction':
-#         data_source = merged_prediction_df
-#     else:
-#         data_source = df
-
-#     country_id = COUNTRY_NAMES[selected_country]
-
-#     # keep data rows that contain selected country related data 
-#     filtered = data_source[(data_source['country_a'] == country_id) | (data_source['country_b'] == country_id)].copy()
-
-#     filtered['partner_country_code'] = filtered.apply(
-#         lambda row: row['country_b'] if row['country_a'] == country_id else row['country_a'], axis=1
-#     )
-#     filtered['partner_country'] = filtered['partner_country_code'].map(COUNTRY_LABELS)
-
-#     partner_options = [
-#         {'label': name, 'value': name}
-#         for name in sorted(filtered['partner_country'].unique())
-#         if name != selected_country
-#     ]
-
-#     if selected_partner:
-#         partner_id = COUNTRY_NAMES[selected_partner]
-
-#         if trade_type == "export":
-#             view = filtered[(filtered['country_a'] == country_id) & (filtered['country_b'] == partner_id)]
-#         elif trade_type == "import":
-#             view = filtered[(filtered['country_a'] == partner_id) & (filtered['country_b'] == country_id)]
-#         else:  # total
-#             view = filtered[
-#                 ((filtered['country_a'] == country_id) & (filtered['country_b'] == partner_id)) |
-#                 ((filtered['country_a'] == partner_id) & (filtered['country_b'] == country_id))
-#             ]
-#     else:
-#         if trade_type == "export":
-#           view = filtered[(filtered['country_a'] == country_id)]
-#         elif trade_type == "import":
-#             view = filtered[(filtered['country_b'] == country_id)]
-#         else:
-#             view = filtered
-
-
-#     latest_year = view['year'].max()
-#     prev_year = view['year'][view['year'] < latest_year].max()
-
-#     view.attrs['trade_type'] = trade_type
-
-#     sector_agg = calculate_percentages(view, 'sector', latest_year, prev_year)
-
-#     display_trade_type = "Trade Volume" if trade_type == "total" else trade_type.capitalize()
-
-#     is_prediction = tab == "prediction"
-#     title_prefix = "Predicted " if is_prediction else ""
-#     title_suffix = f"for {latest_year}" if is_prediction else f"in {latest_year}"
-
-#     if selected_partner:
-#         title = f"{title_prefix}{display_trade_type} from {selected_country} to {selected_partner} by Sector {title_suffix}"
-#     else:
-#         title = f"{title_prefix}{selected_country}'s {display_trade_type} by Sector {title_suffix}"
-
-
-#     sector_agg['percentage'] = sector_agg['percentage'].round(1)
-#     sector_agg['change_str'] = sector_agg['change'].apply(lambda x: f"{x:+.2f}%")
-#     sector_agg['previous_pct'] = sector_agg['previous_volume'] / sector_agg['previous_volume'].sum() * 100
-#     sector_agg['previous_pct_str'] = sector_agg['previous_pct'].round(1).astype(str) + '%'
-
-#     max_change = sector_agg['change'].abs().max() * 5
-
-#     hover_template = (
-#         '<b>%{label}</b><br>'
-#         'Current Share (' + str(latest_year) + '): %{customdata[0]}<br>'
-#         'Previous Share (' + str(prev_year) + '): %{customdata[1]}<br>'
-#         'Change in Percentage Share: %{customdata[2]}'
-#     )
-
-#     fig_treemap = px.treemap(
-#         sector_agg, path=['sector'], values='percentage', color='change_clipped',
-#         color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
-#         range_color=[-max_change, max_change], color_continuous_midpoint=0,
-#         custom_data=['percentage', 'previous_pct_str', 'change_str']
-#     )
-#     fig_treemap.update_traces(
-#         hovertemplate=hover_template,
-#         texttemplate='<b>%{label}</b><br>%{customdata[0]} (%{customdata[2]})'
-#     )
-#     fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), coloraxis_showscale=False)
-
-#     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
-
-#     return fig_treemap, fig_bar, partner_options, title
-
 @app.callback(
     Output('country-treemap1b', 'figure'),
     Output('country-bar1b', 'figure'),
-    Output('country-select-alt21b', 'options'),
     Output('country-title1b', 'children'),
     Input('country-select1b', 'value'),
     Input('trade-type-select1b', 'data'),
@@ -850,12 +354,6 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
     filtered = data_source[data_source['country_a'] == country_id].copy()
     filtered['partner_country'] = filtered['country_b'].map(COUNTRY_LABELS)
 
-    partner_options = [
-        {'label': name, 'value': name}
-        for name in sorted(filtered['partner_country'].unique())
-        if name != selected_country
-    ]
-
     if selected_partner:
         partner_id = COUNTRY_NAMES[selected_partner]
         view = filtered[filtered['country_b'] == partner_id]
@@ -883,7 +381,8 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
     sector_agg['change_str'] = sector_agg['change'].apply(lambda x: f"{x:+.2f}%")
     sector_agg['previous_pct'] = sector_agg['previous_volume'] / sector_agg['previous_volume'].sum() * 100
     sector_agg['previous_pct_str'] = sector_agg['previous_pct'].round(1).astype(str) + '%'
-
+    sector_agg['percentage_str'] = sector_agg['percentage'].astype(str) + '%'
+    
     max_change = sector_agg['change'].abs().max() * 5
 
     hover_template = (
@@ -897,7 +396,7 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
         sector_agg, path=['sector'], values='percentage', color='change_clipped',
         color_continuous_scale=[[0, '#d73027'], [0.5, '#f7f7f7'], [1, '#1a9850']],
         range_color=[-max_change, max_change], color_continuous_midpoint=0,
-        custom_data=['percentage', 'previous_pct_str', 'change_str']
+        custom_data=['percentage_str', 'previous_pct_str', 'change_str'] 
     )
     fig_treemap.update_traces(
         hovertemplate=hover_template,
@@ -907,5 +406,34 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
 
     fig_bar = generate_bar_chart(sector_agg, 'sector', 'volume', 'previous_volume', latest_year, prev_year)
 
-    return fig_treemap, fig_bar, partner_options, title
+    return fig_treemap, fig_bar, title
 
+@app.callback(
+    Output('country-select-alt21b', 'options'),
+    Input('country-select1b', 'value'),
+    State('module1b-tabs', 'value'),
+    State('forecast-data', 'data')
+)
+def update_partner_options(selected_country, tab, forecast_data):
+    country_id = COUNTRY_NAMES[selected_country]
+
+    if tab == 'prediction' and forecast_data:
+        df_forecast = pd.DataFrame(forecast_data)
+        if 'scenario' in df_forecast.columns:
+            df_forecast = df_forecast[df_forecast['scenario'] == 'postshock'].drop(columns=['scenario'])
+        df_forecast['year'] = pd.to_numeric(df_forecast['year'], errors='coerce')
+        latest_historical = df_raw[df_raw['year'] == df_raw['year'].max()]
+        df_combined = pd.concat([latest_historical, df_forecast], ignore_index=True)
+    else:
+        df_combined = df.copy()
+
+    # Filter rows where selected country is the exporter (A)
+    filtered = df_combined[df_combined['country_a'] == country_id].copy()
+    filtered['partner_country'] = filtered['country_b'].map(COUNTRY_LABELS)
+
+    options = [
+        {'label': name, 'value': name}
+        for name in sorted(filtered['partner_country'].dropna().unique())
+        if name != selected_country
+    ]
+    return options

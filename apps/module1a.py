@@ -84,6 +84,14 @@ layout = html.Div([
 
     html.Div([
         html.Div([
+            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
+            dbc.ButtonGroup([
+                dbc.Button("Trade Volume", id='btn-total1c', n_clicks=0, outline = False, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                dbc.Button("Exports", id='btn-export1c', n_clicks=0, outline = True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
+                dbc.Button("Imports", id='btn-import1c', n_clicks=0, outline = True, size='sm', color='primary', style={'border': '1px solid #ccc'})
+            ], className='w-100')
+        ], className="col-md-6"),
+        html.Div([
             html.Label("Display Type", className="form-label fw-semibold mb-1 text-center w-100"),
             daq.ToggleSwitch(
                 id='toggle-display1c',
@@ -92,15 +100,7 @@ layout = html.Div([
                 className="mb-2",
                 size=60
             )
-        ], className="col-md-6 d-flex flex-column align-items-center"),
-        html.Div([
-            html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
-            dbc.ButtonGroup([
-                dbc.Button("Trade Volume", id='btn-total1c', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
-                dbc.Button("Exports", id='btn-export1c', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'}),
-                dbc.Button("Imports", id='btn-import1c', n_clicks=0, outline=True, size='sm', color='primary', style={'border': '1px solid #ccc'})
-            ], className='w-100')
-        ], className="col-md-6")
+        ], className="col-md-6 d-flex flex-column align-items-center")
     ], className="row mb-4"),
 
     dcc.Tabs(id="module1c-tabs", value="historical", children=[
@@ -151,9 +151,9 @@ def update_display_type(value):
 
 @app.callback(
     Output('trade-type-select1c', 'data'),
-    Output('btn-total1c', 'color'),
-    Output('btn-export1c', 'color'),
-    Output('btn-import1c', 'color'),
+    Output('btn-total1c', 'outline'),
+    Output('btn-export1c', 'outline'),
+    Output('btn-import1c', 'outline'),
     Input('btn-total1c', 'n_clicks'),
     Input('btn-export1c', 'n_clicks'),
     Input('btn-import1c', 'n_clicks'),
@@ -162,12 +162,13 @@ def update_display_type(value):
 def update_trade_type(n_total, n_export, n_import):
     ctx = callback_context.triggered_id
     if ctx == 'btn-total1c':
-        return 'total', 'primary', 'secondary', 'secondary'
+        return 'total', False, True, True
     elif ctx == 'btn-export1c':
-        return 'export', 'secondary', 'primary', 'secondary'
+        return 'export', True, False, True
     elif ctx == 'btn-import1c':
-        return 'import', 'secondary', 'secondary', 'primary'
+        return 'import', True, True, False
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
 
 @app.callback(
     Output("prediction-tab1c", "disabled"),
