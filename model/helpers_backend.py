@@ -681,7 +681,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     temp = temp.drop('country_pair', axis=1)
 
     #add additional columns for frontend
-    bec_export_cols=[f'bec_{i}_export_A_to_b' for i in range(1, 9)]
+    bec_export_cols=[f'bec_{i}_export_A_to_B' for i in range(1, 9)]
     bec_import_cols=[f'bec_{i}_import_A_from_B' for i in range(1, 9)]
     temp['total_export_of_A_to_B']=temp[bec_export_cols].sum(axis=1)
     temp['total_import_of_A_from_B']=temp[bec_import_cols].sum(axis=1)
