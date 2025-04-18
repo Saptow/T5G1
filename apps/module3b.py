@@ -116,23 +116,56 @@ def calculate_volume(df_view, sector_code, trade_type):
         df_view["value"] = df_view[exp_col] + df_view[imp_col]
     return df_view
 
-def calculate_percentage(df_view, trade_type):
+# def calculate_percentage(df_view, trade_type):
+#     if trade_type == "export":
+#         trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES]
+#     elif trade_type == "import":
+#         trade_cols = [f"{code}_import_A_from_B" for code in SECTOR_CODES]
+#     else:
+#         trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES] + \
+#                       [f"{code}_import_A_from_B" for code in SECTOR_CODES]
+
+#     df_view["total"] = df_view[trade_cols].sum(axis=1)
+#     df_view["percentage"] = 100 * df_view["value"] / df_view["total"].replace(0, 1)
+#     return df_view
+
+def calculate_percentage(df_view, sector_code, trade_type, country_id, df_all):
     if trade_type == "export":
-        trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES]
+        col = f"{sector_code}_export_A_to_B"
+        df_view["value"] = df_view[col]
     elif trade_type == "import":
-        trade_cols = [f"{code}_import_A_from_B" for code in SECTOR_CODES]
+        col = f"{sector_code}_import_A_from_B"
+        df_view["value"] = df_view[col]
     else:
-        trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES] + \
-                      [f"{code}_import_A_from_B" for code in SECTOR_CODES]
+        df_view["value"] = df_view[f"{sector_code}_export_A_to_B"] + df_view[f"{sector_code}_import_A_from_B"]
 
-    df_view["total"] = df_view[trade_cols].sum(axis=1)
+    # 🆕 Use full df_all (either just df_raw or df_raw + prediction)
+    all_partners_view = df_all[df_all["country_a"] == country_id].copy()
+    if trade_type == "export":
+        all_partners_view["value"] = all_partners_view[f"{sector_code}_export_A_to_B"]
+    elif trade_type == "import":
+        all_partners_view["value"] = all_partners_view[f"{sector_code}_import_A_from_B"]
+    else:
+        all_partners_view["value"] = all_partners_view[f"{sector_code}_export_A_to_B"] + \
+                                     all_partners_view[f"{sector_code}_import_A_from_B"]
+
+    total_per_year = all_partners_view.groupby("year")["value"].sum().rename("total")
+    df_view = df_view.merge(total_per_year, on="year", how="left")
     df_view["percentage"] = 100 * df_view["value"] / df_view["total"].replace(0, 1)
+
     return df_view
 
-def calculate_sector_shares(df_view, sector_code, trade_type):
-    df_view = calculate_volume(df_view, sector_code, trade_type)
-    df_view = calculate_percentage(df_view, trade_type)
-    return df_view
+
+def calculate_sector_shares(df_view, sector_code, trade_type, country_id, df_all):
+    return calculate_percentage(df_view, sector_code, trade_type, country_id, df_all)
+
+
+# def calculate_sector_shares(df_view, sector_code, trade_type, country_id):
+#     #df_view = calculate_volume(df_view, sector_code, trade_type)
+#     df_view = calculate_percentage(df_view, sector_code, trade_type, country_id)
+#     return df_view
+
+
 
 
 # === New Sector-as-Main-Input Module with ID suffix "8abc" ===
@@ -315,10 +348,7 @@ def update_graph(subtab, country, sector_code, partner_codes, trade_type, displa
             return html.Div("Please upload forecast data to view predictions.", className="text-muted text-center")
         df_prediction_only = pd.DataFrame(processed_data)
         df_prediction_only = df_prediction_only.rename(columns={"total_export_of_A_to_B": "total_export_A_to_B"})
-        df_prediction_only.to_csv("premerge.csv")
         df_combined_all = pd.concat([df_raw, df_prediction_only], ignore_index=True)
-
-        df_combined_all.to_csv("debug_combined_prediction4.csv", index=False)
     else:
         df_combined_all = df_raw.copy()
 
@@ -333,7 +363,7 @@ def update_graph(subtab, country, sector_code, partner_codes, trade_type, displa
     df_view_all = df_view_all[df_view_all['country_b'].isin(partner_codes)]
 
     if subtab in ["historical-bar8abc", "prediction-bar8abc"]:
-        df_view = calculate_sector_shares(df_view_all.copy(), sector_code, trade_type)
+        df_view = calculate_sector_shares(df_view_all.copy(), sector_code, trade_type, country_id, df_combined_all)
         df_view = df_view[df_view["year"] >= 2015]
         y_col = "value" if display_mode == "volume" else "percentage"
         y_title = "Trade Volume" if display_mode == "volume" else "Percentage Share"
@@ -350,7 +380,8 @@ def update_graph(subtab, country, sector_code, partner_codes, trade_type, displa
         lines = []
         for partner_code in partner_codes:
             temp = df_view_all[df_view_all["country_b"] == partner_code].copy()
-            temp = calculate_sector_shares(temp, sector_code, trade_type)
+            temp = calculate_sector_shares(temp, sector_code, trade_type, country_id, df_combined_all)
+
             temp = temp.sort_values("year")
             if display_mode == "percentage":
                 temp["change"] = temp["percentage"].diff()
