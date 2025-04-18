@@ -15,6 +15,8 @@ df= df.rename(columns= {"exportsallgoodatob_alldata": "Exports", "importsallgood
                         "iso3b": "CountryB", "IdealPointDistance": "Geopolitical Distance"})
 df = df[["CountryA","CountryB", "Year", "Exports", "Imports", "Total Trade", "Geopolitical Distance"]]
 df.drop(df[df['Year'] == 2024].index, inplace=True)
+df = df[~((df["CountryA"] == "ARE") | (df["CountryB"] == "ARE"))]
+
 
 # List of years
 years = sorted(df['Year'].unique())
@@ -28,7 +30,6 @@ df["Trade Balance"] = df["Exports"] - df["Imports"]
 df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
 
 COUNTRY_LABELS = {
-    "ARE": "United Arab Emirates",
     "AUS": "Australia",
     "CHE": "Switzerland",
     "CHN": "China",
@@ -70,10 +71,14 @@ layout = html.Div([
     html.Div(
         html.H6(
             """
-            Explore how Singapore’s relationships with its trading partners evolved over time. 
+            Explore how Singapore’s relationships with its trading partners evolved over time. This visualisation 
+            assesses geopolitical alignment based on annual UN voting records, following the methodology of Bailey et al. (2017). 
+            Each country’s political stance is estimated yearly, and the geopolitical distance reflects how closely aligned 
+            two countries are—greater distance indicates less alignment.
             Select across different years to compare, direction of trade and metrics to determine trade value. 
             Vary country choices by customising country choices or filter for the top few countries. 
-            Choose sectors with ease through dropdown selection.
+            Choose sectors with ease through dropdown selection. Important Note: Geopolitical distance values in the 
+            predicted visualisations are based on the latest available scores from 2023 and are not forecasted.
             """,
             style={
                 'color': '#333333',
@@ -342,27 +347,27 @@ def update_geo_trade_chart(reporter, partner, trade_type):
 
 @app.callback(
     Output("prediction-tab4b", "disabled"),
-    Input("input-uploaded", "data"),
+    # Input("input-uploaded", "data"),
     Input("forecast-data", "data"),  # Add this input
     prevent_initial_call=True
 )
-def handle_prediction_upload(uploaded, forecast_data):
-    global df_pred, years
+def handle_prediction_upload(forecast_data):
+    global df_pred
     
     # Check if we have forecast data
-    if not uploaded or not forecast_data:
+    if not forecast_data:
         return True  # Keep prediction tab disabled
     
     try:
 
         prediction_df = pd.DataFrame(forecast_data)
         
-        # If your forecast data is already in the required format:
-        if all(col in prediction_df.columns for col in ["country_a", "country_b", "year", "total_import_of_A_from_B", "trade_volume", "total_export_A_to_B"]):
-            pass  # Data is already properly formatted
-        else:
-            print("Unexpected forecast data format")
-            return True  # Keep prediction tab disabled
+        # # If your forecast data is already in the required format:
+        # if all(col in prediction_df.columns for col in ["country_a", "country_b", "year", "total_import_of_A_from_B", "trade_volume", "total_export_of_A_to_B"]):
+        #     pass  # Data is already properly formatted
+        # else:
+        #     print("Unexpected forecast data format")
+        #     return True  # Keep prediction tab disabled
         
         # Filter for post-shock scenario if that's in your data
         if "scenario" in prediction_df.columns:
@@ -399,7 +404,7 @@ def handle_prediction_upload(uploaded, forecast_data):
             "year": "Year",
             "total_import_of_A_from_B": "Imports",
             "trade_volume": "Total Trade",
-            "total_export_A_to_B": "Exports"
+            "total_export_of_A_to_B": "Exports"
         }, inplace=True)
 
         # Map country codes to names
@@ -430,8 +435,8 @@ def handle_prediction_upload(uploaded, forecast_data):
     Input("input-uploaded", "data"),
     prevent_initial_call=True
 )
-def switch_to_prediction_tab(uploaded):
-    if uploaded:
+def switch_to_prediction_tab(forecast_data):
+    if forecast_data:
         return "prediction"
     return dash.no_update
 

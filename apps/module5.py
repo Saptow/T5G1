@@ -33,20 +33,20 @@ def process_forecast_data(data):
     df_raw.rename(columns={
         "country_a": "Reporter",
         "country_b": "Partner",
-        "total_import_of_A_from_B": "Import Value",
-        "trade_volume": "Total Trade Volume"
+        "total_import_of_A_from_B": "Imports",
+        "trade_volume": "Total Trade"
     }, inplace=True)
     df_raw["Reporter"] = df_raw["Reporter"].map(country_code_to_name).fillna(df_raw["Reporter"])
     df_raw["Partner"] = df_raw["Partner"].map(country_code_to_name).fillna(df_raw["Partner"])
-    df_raw["Export Value"] = df_raw["Total Trade Volume"] - df_raw["Import Value"]
+    df_raw["Exports"] = df_raw["Total Trade"] - df_raw["Imports"]
 
     # === 2. COUNTRY-LEVEL AGGREGATION ===
     country_metrics = {}
     for role, col_name in [("Reporter", "Reporter"), ("Partner", "Partner")]:
         for metric, new_col in [
-            ("Total Trade Volume", f"{col_name} Total"),
-            ("Export Value", f"{col_name} Export"),
-            ("Import Value", f"{col_name} Import")
+            ("Total Trade", f"{col_name} Total"),
+            ("Exports", f"{col_name} Export"),
+            ("Imports", f"{col_name} Import")
         ]:
             temp = df_raw.groupby([role, "Time Period"])[metric].sum().reset_index()
             temp.rename(columns={role: "Reporter", metric: new_col}, inplace=True)
@@ -57,11 +57,11 @@ def process_forecast_data(data):
         combined_df = combined_df.merge(country_metrics[key], on=["Reporter", "Time Period"], how="outer")
 
     combined_df.fillna(0, inplace=True)
-    combined_df["Total Trade Volume"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
-    combined_df["Export Value"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
-    combined_df["Import Value"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
+    combined_df["Total Trade"] = combined_df["Reporter Total"] + combined_df["Partner Total"]
+    combined_df["Exports"] = combined_df["Reporter Export"] + combined_df["Partner Export"]
+    combined_df["Imports"] = combined_df["Reporter Import"] + combined_df["Partner Import"]
 
-    pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade Volume", "Export Value", "Import Value"])
+    pivot = combined_df.pivot(index="Reporter", columns="Time Period", values=["Total Trade", "Exports", "Imports"])
     percent_change = (pivot.xs("2026b", level=1, axis=1) - pivot.xs("2026a", level=1, axis=1)) / pivot.xs("2026a", level=1, axis=1)*100
     percent_change.reset_index(inplace=True)
 
@@ -70,24 +70,24 @@ def process_forecast_data(data):
     export_cols = [c for c in df_raw.columns if c.startswith("bec_") and "_export" in c]
 
     export_melted = df_raw[["Reporter", "Time Period"] + export_cols].melt(
-        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Export Value"
+        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Exports"
     )
     export_melted["Sector Group"] = (export_melted["Sector"].str.extract(r"^(bec_\d+)")[0].map(SECTOR_LABELS))
 
     import_melted = df_raw[["Reporter", "Time Period"] + import_cols].melt(
-        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Import Value"
+        id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Imports"
     )
     
     import_melted["Sector Group"] = (import_melted["Sector"].str.extract(r"^(bec_\d+)")[0].map(SECTOR_LABELS))
 
     sector_df = pd.merge(
-        export_melted[["Reporter", "Time Period", "Sector Group", "Export Value"]],
-        import_melted[["Reporter", "Time Period", "Sector Group", "Import Value"]],
+        export_melted[["Reporter", "Time Period", "Sector Group", "Exports"]],
+        import_melted[["Reporter", "Time Period", "Sector Group", "Imports"]],
         on=["Reporter", "Time Period", "Sector Group"],
         how="outer"
     )
     sector_df.fillna(0, inplace=True)
-    sector_df["Total Trade Volume"] = sector_df["Export Value"] + sector_df["Import Value"]
+    sector_df["Total Trade"] = sector_df["Exports"] + sector_df["Imports"]
 
     df_2026a = sector_df[sector_df["Time Period"] == "2026a"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
     df_2026b = sector_df[sector_df["Time Period"] == "2026b"].groupby(["Reporter", "Sector Group"]).sum(numeric_only=True)
@@ -97,7 +97,7 @@ def process_forecast_data(data):
 
     df_merged = df_2026a.join(df_2026b, how="inner").reset_index()
 
-    for col in ["Export Value", "Import Value", "Total Trade Volume"]:
+    for col in ["Exports", "Imports", "Total Trade"]:
         df_merged[f"{col}"] = (
             (df_merged[f"{col}_2026b"] - df_merged[f"{col}_2026a"]) / df_merged[f"{col}_2026a"].replace(0, 1)
         ) * 100
@@ -169,10 +169,10 @@ layout = html.Div([
             html.Div([
                 # 1. Toggle Switch Section
             html.Div([
-                html.P("1. Sector/Country View:", style={"marginBottom": "6px"}),
+                html.P("1. Select Economy or Sector View:", style={"marginBottom": "6px"}),
 
                 html.Div([
-                    html.Div("Country View", style={"marginRight": "10px", "marginBottom": "0"}),
+                    html.Div("Economy View", style={"marginRight": "10px", "marginBottom": "0"}),
                     daq.BooleanSwitch(
                         id="view-toggle-switch",
                         on=False, # False means Country View is selected (default)
@@ -185,21 +185,21 @@ layout = html.Div([
 
             # 2. Filter Dropdown
             html.Div([
-                html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
+                html.P("2. Select An Economy or Sector:", style={"marginBottom": "2px"}),
                 dcc.Dropdown(id="filter-dropdown", placeholder = '', style={"width": "250px"})
             ], style={"marginRight": "30px"}),
 
             # 3. Trade Type Dropdown
             html.Div([
-                html.P("3. Trade Type:", style={"marginBottom": "2px"}),
+                html.P("3. Select Direction of Trade:", style={"marginBottom": "2px"}),
                 dcc.Dropdown(
                     id="trade-type-dropdown",
                     options=[
-                        {"label": "Total Trade Volume", "value": "Total Trade Volume"},
-                        {"label": "Export Value", "value": "Export Value"},
-                        {"label": "Import Value", "value": "Import Value"}
+                        {"label": "Total Trade ", "value": "Total Trade"},
+                        {"label": "Exports", "value": "Exports"},
+                        {"label": "Imports", "value": "Imports"}
                     ],
-                    value = "Total Trade Volume",
+                    value = "Total Trade",
                     style={"width": "220px"}
                 )
             ])
@@ -266,8 +266,6 @@ def render_tab(tab):
         return dcc.Graph(id="percent-change-bar", config={"displayModeBar": False})
     elif tab == "dumbbell":
         return dcc.Graph(id="dumbbell-graph", config={"displayModeBar": False})
-    elif tab == "bubble":
-        return html.Div([html.H4("Bubble Chart Coming Soon!", className="text-center mt-4")])
 
 # === DUMBBELL CALLBACKS ===
 @app.callback(
@@ -382,7 +380,7 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view, processe
         )
 
     fig.update_layout(
-        title=f"Change in {trade_type} after Geopolitical Shock",
+        title=f"Predicted Change in {trade_type} from 2026 Baseline  — {selected_filter}",
         xaxis_title=trade_type,
         yaxis_title="" if is_country_view else "Country",
         height=600,
@@ -431,9 +429,10 @@ def update_ranking_chart(selected_filter, trade_type, is_country_view, processed
         x=trade_type,
         orientation='h',
         color=trade_type,
-        color_continuous_scale=["red", "lightgray", "green"],
+        color_continuous_scale="RdYlGn",  # or "RdBu", "RdGy", etc.
+        color_continuous_midpoint=0, 
         labels={trade_type: "% Change"},
-        title=f"Predicted Change in {trade_type} from 2026a (Baseline){title_suffix}"
+        title=f"Predicted Change in {trade_type} from 2026 Baseline {title_suffix}"
     )
 
     fig.update_layout(
