@@ -80,7 +80,6 @@ SECTOR_LABELS = {
 SECTOR_CODES = list(SECTOR_LABELS.keys())
 
 COUNTRY_LABELS = {
-    "ARE": "United Arab Emirates",
     "AUS": "Australia",
     "CHE": "Switzerland",
     "CHN": "China",
