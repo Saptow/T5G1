@@ -19,6 +19,7 @@ df= df.rename(columns= {"exportsallgoodatob_alldata": "Exports", "importsallgood
                         "iso3b": "CountryB", "IdealPointDistance": "Geopolitical Distance"})
 df = df[["CountryA","CountryB", "Year", "Exports", "Imports", "Total Trade", "Geopolitical Distance"]]
 df.drop(df[df['Year'] == 2024].index, inplace=True)
+df = df[~((df["CountryA"] == "ARE") | (df["CountryB"] == "ARE"))]
 
 # List of years
 years = sorted(df['Year'].unique())
@@ -32,7 +33,6 @@ df["Trade Balance"] = df["Exports"] - df["Imports"]
 df["Balance of Trade"] = df["Trade Balance"].apply(lambda x: "Surplus" if x > 0 else "Deficit")
 
 COUNTRY_LABELS = {
-    "ARE": "United Arab Emirates",
     "AUS": "Australia",
     "CHE": "Switzerland",
     "CHN": "China",
@@ -69,6 +69,9 @@ df_pred = None
 app = get_app()
 
 def get_filtered_countries(df, reporter_country, num_countries, order, metric, selected_year):
+    global df_pred
+    df = pd.concat([df, df_pred]) if df_pred is not None else df
+    
     df = df[(df["CountryA"] == reporter_country) & (df["Year"] == selected_year)].copy()
     df = df.rename(columns={"CountryB": "Country"})
 
@@ -101,7 +104,8 @@ layout = html.Div([
             Explore how an economy’s trade balance and geopolitical alignment vary across its different trading partners. 
             This visualisation assesses alignment based on annual UN voting records, following the methodology of Bailey et al. (2017). 
             Each country’s political stance is estimated yearly, and the geopolitical distance reflects how closely aligned two countries are—greater distance indicates less alignment. 
-            Use the chart to examine how political proximity correlates with trade surplus or deficit across top trading partners.
+            Use the chart to examine how political proximity correlates with trade surplus or deficit across top trading partners. Important Note: Geopolitical distance values in the 
+            predicted visualisations are based on the latest available scores from 2023 and are not forecasted.
             """,
             style={
                 'color': '#333333',
@@ -531,7 +535,7 @@ def handle_prediction_upload(forecast_data):
             "year": "Year",
             "total_import_of_A_from_B": "Imports",
             "trade_volume": "Total Trade",
-            "total_export_from_A_to_B": "Exports"
+            "total_export_of_A_to_B": "Exports"
         }
         
         # Only rename columns that exist
