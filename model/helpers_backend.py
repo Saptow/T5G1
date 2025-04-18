@@ -559,6 +559,51 @@ def train_val_split(x, y, val_ratio=0.2):
     return x_train, y_train, x_val, y_val
 
 
+##### DataTransformer
+def pair_data(df):
+    import pandas as pd
+
+    # Drop pre-computed totals to avoid incorrect duplication
+    df = df.drop(columns=[
+        "total_export_of_A_to_B",
+        "total_import_of_A_from_B",
+        "trade_volume"
+    ], errors="ignore")
+
+    # Define BEC column names
+    bec_export_cols = [f"bec_{i}_export_A_to_B" for i in range(1, 9)]
+    bec_import_cols = [f"bec_{i}_import_A_from_B" for i in range(1, 9)]
+
+    # Create mirrored DataFrame (B to A)
+    df_mirrored = df.copy()
+    df_mirrored[["country_a", "country_b"]] = df_mirrored[["country_b", "country_a"]]
+
+    for i in range(1, 9):
+        export_col = f"bec_{i}_export_A_to_B"
+        import_col = f"bec_{i}_import_A_from_B"
+        df_mirrored[export_col], df_mirrored[import_col] = (
+            df[import_col],
+            df[export_col],
+        )
+
+    # Combine original and mirrored rows
+    df_combined = pd.concat([df, df_mirrored], ignore_index=True)
+
+    # Recalculate totals
+    df_combined["total_export_of_A_to_B"] = df_combined[bec_export_cols].sum(axis=1)
+    df_combined["total_import_of_A_from_B"] = df_combined[bec_import_cols].sum(axis=1)
+    df_combined["trade_volume"] = (
+        df_combined["total_export_of_A_to_B"] + df_combined["total_import_of_A_from_B"]
+    )
+
+    # Sort for easier viewing
+    df_combined = df_combined.sort_values(by=["scenario", "country_a", "country_b"]).reset_index(drop=True)
+
+    return df_combined
+
+
+
+
 ##############################################################
 ############### FINAL FUNCTION for TGNN ######################
 ##############################################################
@@ -677,6 +722,7 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
         lambda x: '_'.join(sorted([x['country_a'], x['country_b']])), 
         axis=1
     )
+    temp.rename(columns=lambda col: col[:-1] + 'B' if col.endswith('_to_b') else col, inplace=True)
     temp = temp.drop_duplicates(subset=['country_pair', 'year'], keep='first')
     temp = temp.drop('country_pair', axis=1)
 
@@ -695,6 +741,11 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     temp=temp[temp['year']==2026] #comment out if need 2024 to 2026 data as well
 
     baseline=pd.read_csv('./data/final/2026_baseline_forecast.csv',header=0)
+    baseline.rename(columns=lambda col: col[:-1] + 'B' if col.endswith('_to_b') else col, inplace=True)
     final=pd.concat([baseline,temp],axis=0,ignore_index=True)
     final.reset_index(drop=True,inplace=True)
+
+    final = pair_data(final)
+    #final.to_csv("/Users/jeremytoh/Desktop/dse3101/lalala_post.csv") # change this to visualise and check if needed 
     return final
+

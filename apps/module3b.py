@@ -1,23 +1,71 @@
 import pandas as pd
 import plotly.express as px
 from dash import dcc, html, Input, Output, State, callback_context, get_app
-import dash
 import dash_bootstrap_components as dbc
 from dash.dependencies import ALL
 import dash_daq as daq
 from dash.exceptions import PreventUpdate
+import dash
 
 # === Load and Prepare Data ===
 df_raw = pd.read_csv("data/final/historical_data.csv")
-prediction_df = pd.read_csv("sample_2026.csv")
-prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+
+#prediction_df = pd.read_csv("sample_2026.csv")
+#prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+#prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
 df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
 
+#runtime_prediction_df = prediction_df.copy()
+
 # Merge historical and prediction data
-df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
+#df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
 
 app = get_app()
+
+@app.callback(
+    Output("processed-forecast-data8abc", "data"),
+    Input("forecast-data", "data"),
+    prevent_initial_call=True
+)
+# def process_forecast_data(forecast_data):
+#     if not forecast_data:
+#         return dash.no_update
+        
+#     # Convert the forecast data to DataFrame
+#     prediction_df = pd.DataFrame(forecast_data)
+#     #prediction_df.to_csv()
+    
+#     # Filter postshock scenario if available
+#     if "scenario" in prediction_df.columns:
+#         prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
+    
+#     # Ensure year is numeric
+#     prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
+    
+#     # Merge with historical data
+#     df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
+    
+#     # Return the processed data
+#     return df_combined_all.to_dict('records')
+
+def process_forecast_data(forecast_data):
+    global runtime_prediction_df  # assignment to outer variable 
+
+    if not forecast_data:
+        return dash.no_update
+
+    prediction_df_new = pd.DataFrame(forecast_data)
+
+    if "scenario" in prediction_df_new.columns:
+        prediction_df_new = prediction_df_new[prediction_df_new["scenario"] == "postshock"].drop(columns=["scenario"])
+
+    prediction_df_new['year'] = pd.to_numeric(prediction_df_new['year'], errors='coerce')
+
+    # overwrite global variable used for rendering
+    runtime_prediction_df = prediction_df_new.copy()
+
+    return prediction_df_new.to_dict("records")
+
 # === Dictionaries ===
 SECTOR_LABELS = {
     "bec_1": "Food and Agriculture",
@@ -97,6 +145,7 @@ layout = html.Div([
     dcc.Store(id="selected-partners-multi8abc", data=["AUS", "CHN"]),
     dcc.Store(id="trade-type-select8abc", data='total'),
     dcc.Store(id="display-mode8abc", data='volume'),
+    dcc.Store(id="processed-forecast-data8abc", data = 'none'),
 
     html.H2("Country Share Trend", className="text-center mb-4"),
 
@@ -252,11 +301,26 @@ def toggle_selected_partners(n_clicks, selected_partners):
     Input("sector-select8abc", "value"),
     Input("selected-partners-multi8abc", "data"),
     Input("trade-type-select8abc", "data"),
-    Input("display-mode8abc", "data")
+    Input("display-mode8abc", "data"),
+    Input("processed-forecast-data8abc", "data")
 )
-def update_graph(subtab, country, sector_code, partner_codes, trade_type, display_mode):
+def update_graph(subtab, country, sector_code, partner_codes, trade_type, display_mode, processed_data):
     if not country or not sector_code:
         return dash.no_update
+
+    country_id = COUNTRY_NAMES[country]
+
+    if subtab.startswith("prediction"):
+        if not processed_data or processed_data == "none":
+            return html.Div("Please upload forecast data to view predictions.", className="text-muted text-center")
+        df_prediction_only = pd.DataFrame(processed_data)
+        df_prediction_only = df_prediction_only.rename(columns={"total_export_of_A_to_B": "total_export_A_to_B"})
+        df_prediction_only.to_csv("premerge.csv")
+        df_combined_all = pd.concat([df_raw, df_prediction_only], ignore_index=True)
+
+        df_combined_all.to_csv("debug_combined_prediction4.csv", index=False)
+    else:
+        df_combined_all = df_raw.copy()
 
     country_id = COUNTRY_NAMES[country]
     df_view_all = df_combined_all[df_combined_all['country_a'] == country_id].copy()
