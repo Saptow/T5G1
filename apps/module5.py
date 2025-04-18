@@ -317,9 +317,7 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view, processe
     if not processed_data or not selected_filter or not trade_type:
         raise dash.exceptions.PreventUpdate
 
-    # Convert dictionary back to DataFrame
     df_merged = pd.DataFrame(processed_data['df_merged'])
-    
     change_col = f"{trade_type}"
     df_plot = df_merged.copy()
 
@@ -330,55 +328,71 @@ def update_dumbbell_chart(selected_filter, trade_type, is_country_view, processe
         df_plot = df_plot[df_plot["Sector Group"] == selected_filter]
         y_axis = df_plot["Reporter"]
 
+    before = df_plot[f"{trade_type}_2026a"]
+    after = df_plot[f"{trade_type}_2026b"]
+    vmin = min(before.min(), after.min())
+    vmax = max(before.max(), after.max())
+    span = vmax - vmin
+    pad = span * 0.1 if span > 0 else abs(vmin) * 0.05 + 1
+
     df_positive = df_plot[df_plot[change_col] >= 0]
     df_negative = df_plot[df_plot[change_col] < 0]
 
     fig = go.Figure()
 
+    # Grey (Before)
     fig.add_trace(go.Scatter(
         y=y_axis,
-        x=df_plot[f"{trade_type}_2026a"],
+        x=before,
         mode="markers",
         name="Before (grey)",
         marker=dict(color="gray", size=12),
         hoverinfo="skip"
     ))
 
+    # Green (After ↑)
     fig.add_trace(go.Scatter(
         y=df_positive[y_axis.name],
         x=df_positive[f"{trade_type}_2026b"],
         mode="markers",
         name="After (increase)",
         marker=dict(color="green", size=12),
-        text=[f"% Change: {chg:.2f}%" for chg in df_positive[change_col]],
+        text=[f"% Change: {chg:.10f}%" for chg in df_positive[change_col]],
         hoverinfo="text"
     ))
 
+    # Red (After ↓)
     fig.add_trace(go.Scatter(
         y=df_negative[y_axis.name],
         x=df_negative[f"{trade_type}_2026b"],
         mode="markers",
         name="After (decrease)",
         marker=dict(color="red", size=12),
-        text=[f"% Change: {chg:.2f}%" for chg in df_negative[change_col]],
+        text=[f"% Change: {chg:.10f}%" for chg in df_negative[change_col]],
         hoverinfo="text"
     ))
 
+    # Dumbbell lines
     for i in range(len(df_plot)):
-        fig.add_shape(type="line",
-                      y0=y_axis.iloc[i], x0=df_plot[f"{trade_type}_2026a"].iloc[i],
-                      y1=y_axis.iloc[i], x1=df_plot[f"{trade_type}_2026b"].iloc[i],
-                      line=dict(color="lightgray", width=4))
+        fig.add_shape(
+            type="line",
+            y0=y_axis.iloc[i], x0=before.iloc[i],
+            y1=y_axis.iloc[i], x1=after.iloc[i],
+            line=dict(color="lightgray", width=4)
+        )
 
     fig.update_layout(
         title=f"Change in {trade_type} after Geopolitical Shock",
         xaxis_title=trade_type,
         yaxis_title="" if is_country_view else "Country",
-        height=600, 
+        height=600,
         plot_bgcolor="#ebebeb",
-        paper_bgcolor="#ffffff"
+        paper_bgcolor="#ffffff",
+        xaxis=dict(range=[vmin - pad, vmax + pad], autorange=False)
     )
+
     return fig
+
 
 # === RANKING CALLBACK ===
 @app.callback(
