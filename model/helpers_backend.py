@@ -670,9 +670,9 @@ def run_tgnn(sentiment_dict, year_nlp=2023):
     predictions_df = pd.DataFrame(predicted)
 
     #Put exports and imports in the same row and transform column names
-    temp=pd.merge(predictions_df,predictions_df,how='outer',left_on=['country_a','country_b','year'],right_on=['country_b','country_a','year'],suffixes=('_export_A_to_b', '_import_A_from_B'))
+    temp=pd.merge(predictions_df,predictions_df,how='outer',left_on=['country_a','country_b','year'],right_on=['country_b','country_a','year'],suffixes=('_export_A_to_B', '_import_A_from_B'))
     temp.drop(columns=['country_a_import_A_from_B','country_b_import_A_from_B'],inplace=True)
-    temp.rename(columns={'country_a_export_A_to_b':'country_a','country_b_export_A_to_b':'country_b'},inplace=True)
+    temp.rename(columns={'country_a_export_A_to_B':'country_a','country_b_export_A_to_B':'country_b'},inplace=True)
     temp['country_pair'] = temp.apply(
         lambda x: '_'.join(sorted([x['country_a'], x['country_b']])), 
         axis=1
