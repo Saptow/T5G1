@@ -348,13 +348,13 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
     if ctx_id == "submit-url" and url_value and url_value.strip():
         url_to_post = url_value.strip()
         try:
-            # response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-            # response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
             
-            # response_data = response.json() if response.content else {} # Returns the dictionary 
+            response_data = response.json() #if response.content else {} # Returns the dictionary 
             response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
             message = f"✅ Input successfully registered."
-            return True, url_to_post, message, response  # Return the response data as well
+            return True, url_to_post, message, response_data  # Return the response data as well
         except Exception as e:
             # In case of an error, log or use a custom error message.
             message = f"❌ Failed to register input: {e}"
@@ -368,6 +368,16 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         return True, "https://sample-article3.com", "✅ Sample article 3 selected.", {'sample':'data3'}
     
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+@app.callback(
+    Output("input-status-message", "children", allow_duplicate=True),
+    Input("submit-url", "n_clicks"),
+    prevent_initial_call=True
+)
+def show_loading_message(n_clicks):
+    if n_clicks:
+        return "⏳ The page is now loading. Please wait until input is registered to toggle through the visualisations."
+    return dash.no_update
 
 @app.callback(
     Output("input-status-message", "children", allow_duplicate=False),
