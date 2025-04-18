@@ -8,6 +8,16 @@ import dash
 import pycountry 
 import dash_daq as daq
 
+SECTOR_LABELS = {
+    "bec_1": "Food and Agriculture",
+    "bec_2": "Energy and Mining",
+    "bec_3": "Construction and Housing",
+    "bec_4": "Textile and Footwear",
+    "bec_5": "Transport and Travel",
+    "bec_6": "ICT and Business",
+    "bec_7": "Health and Education",
+    "bec_8": "Government and Others"
+}
 
 app = get_app()
 
@@ -62,12 +72,13 @@ def process_forecast_data(data):
     export_melted = df_raw[["Reporter", "Time Period"] + export_cols].melt(
         id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Export Value"
     )
-    export_melted["Sector Group"] = "Sector " + export_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
+    export_melted["Sector Group"] = (export_melted["Sector"].str.extract(r"^(bec_\d+)")[0].map(SECTOR_LABELS))
 
     import_melted = df_raw[["Reporter", "Time Period"] + import_cols].melt(
         id_vars=["Reporter", "Time Period"], var_name="Sector", value_name="Import Value"
     )
-    import_melted["Sector Group"] = "Sector " + import_melted["Sector"].str.extract(r"bec_(\d+)_")[0]
+    
+    import_melted["Sector Group"] = (import_melted["Sector"].str.extract(r"^(bec_\d+)")[0].map(SECTOR_LABELS))
 
     sector_df = pd.merge(
         export_melted[["Reporter", "Time Period", "Sector Group", "Export Value"]],
@@ -175,7 +186,7 @@ layout = html.Div([
             # 2. Filter Dropdown
             html.Div([
                 html.P("2. Specific Country/Sector:", style={"marginBottom": "2px"}),
-                dcc.Dropdown(id="filter-dropdown", placeholder = '', style={"width": "220px"})
+                dcc.Dropdown(id="filter-dropdown", placeholder = '', style={"width": "250px"})
             ], style={"marginRight": "30px"}),
 
             # 3. Trade Type Dropdown
