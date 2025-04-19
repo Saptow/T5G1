@@ -1,13 +1,29 @@
 # T5G1
 Group project for DSE3101 on question: Geopolitical distance and Global Trade
 
-Note that Docker Compose has to be used here due to the size of the requirements of this application (particularly PyTorch). </br>
-Note that your first time you press "Go" on the frontend, it will take a while to load the model. This is because it has to download the NLP model from HuggingFace. After that, it will be cached and will be much faster. We could not Git LFS the model weights as we had hit the free quota by accident, so we are going to import it from HuggingFace instead. Apologies for that...
+## Table of Contents
+- [T5G1](#t5g1)
+  - [Table of Contents](#table-of-contents)
+  - [Setting up the Environment to try on your local machine using Docker Compose (Recommended)](#setting-up-the-environment-to-try-on-your-local-machine-using-docker-compose-recommended)
+    - [Prerequisites](#prerequisites)
+    - [Steps](#steps)
+  - [Setting up the Environment Manually (if Docker Compose does not work)](#setting-up-the-environment-manually-if-docker-compose-does-not-work)
+    - [Prerequisites](#prerequisites-1)
+    - [Setting up the Virtual Environment](#setting-up-the-virtual-environment)
+  - [Brief Description of Models](#brief-description-of-models)
+  - [Pre-Processing Steps](#pre-processing-steps)
+  - [Training Pipeline](#training-pipelines)
+
 
 ## Setting up the Environment to try on your local machine using Docker Compose (Recommended)
 #### Prerequisites
-Ensure you have Docker and Docker Compose installed. If not, you can install them by following the instructions [here](https://docs.docker.com/get-docker/) and [here](https://docs.docker.com/compose/install/).
 
+Ensure you have Docker and Docker Compose installed. If not, you can install them by following the instructions [here](https://docs.docker.com/get-docker/) for Docker and [here](https://docs.docker.com/compose/install/) for Docker Compose. </br>
+
+Note that Docker Compose has to be used here due to the size of the requirements of this application (particularly PyTorch). </br>
+Note that your first time you press "Go" on the frontend, it will take a while to load the model. This is because it has to download the NLP model from HuggingFace. After that, it will be cached and will be much faster. We could not Git LFS the model weights as we had hit the free quota by accident, so we are going to import it from HuggingFace instead. Apologies for that...
+
+#### Steps
 1. **Clone the repository:**
     ```sh
     git clone https://github.com/Saptow/T5G1.git
@@ -19,7 +35,7 @@ Ensure you have Docker and Docker Compose installed. If not, you can install the
     docker-compose build
     ```
 
-3. **Run the Docker container:**
+3. **Run the Docker Compose Container:**
     ```sh
     docker-compose up
     ```
@@ -78,3 +94,23 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
     ```
 
     This will start the application and expose it on port 8050(frontend) and 5000(backend).
+
+## Brief Description of Models
+Our backend consists of 2 sub-models, namely our NLP model and ACGRN model. Together, they function to forecast sectoral bilateral trade volumes between country pairs from a piece of trade news article. 
+It starts with the trade news article being scraped by Trafilatura, which then gets parsed into the NLP model to output sentimental scores between country pairs, as well as year. These are pipelined into the ACGRN model, in the form of our unique composite Geopolitical Distance Index, to output 2026 sectoral bilateral trade volumes between country pairs. More details can be found in our technical documentation [here]().
+
+## Pre-Processing Steps
+Datasets used include:
+1. **UN Comtrade** for trade volume data, which was pulled through API calls in Harmonised System (HS) codes and then converted into Broad Economic Categories (BEC) rev 5 codes
+2. **GDELT Dataset** for sentiment scores for events based on country pairs, used to train our model.
+3. **Formal Bilateral Influence Capacity (FBIC)** dataset to derive our tradeagreementindex, consumed by our unique Geopolitical Distance Index. 
+4. **UN Voting Records** dataset to benchmark our new composite Geopolitical Distance Index against.
+
+Typical normalisation algorithms like MinMax Normalisation were used to pre-process before training and deployment. Data completeness checks were done as well to ensure some degree of data quality. Likewise, more details can be found in our technical documentation. 
+
+## Training Pipeline
+For the NLP model, 4000 data points randomly sampled from 2019-2023 events from GDELT dataset were used to train, based on the AvgTone column. Since we adopted a pre-trained model, we utilised a fine-tuning algorithm, which will involve a much slower learning rate so as to avoid overfitting of data. Train/Validation/Test split was 80-10-10. Hyperparameter tuning was done through Optuna.
+
+For the ACGRN model, 2006 to 2020 trade volume data was used to effect into 2007-2020 percentage changes in export volumes before pipelined into the model for training. Since we required a window of 6 years to train our model, we utilised PyTorch's dataloader shuffle to randomly expose the model to different sequences of said windows during training, preventing learning of spurious patterns. Hyperparameter tuning was also done through Optuna. 
+
+As usual, more details can be found in our technical documentation.
