@@ -18,6 +18,3 @@ COPY . .
 # Set environment variable to avoid warning
 ENV FLASK_APP=flask_backend.py
 ENV FLASK_RUN_HOST=0.0.0.0
-
-# Run the application
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

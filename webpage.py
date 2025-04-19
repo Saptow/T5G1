@@ -202,7 +202,7 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         "bbc.com", "edition.cnn.com", "theguardian.com", "cbsnews.com",  "apnews.com", 
         "channelnewsasia.com", "straitstimes.com","nbcnews.com","foxnews.com","abcnews.go.com"
     }
-    def validate_url_domain(url: str):
+    def validate_url_domain(url):
         """
         Checks whether the domain of a given URL is within the approved list.
         Returns True if valid, False if not.
@@ -225,7 +225,11 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         except:
             return False
         
-    ctx_id = callback_context.triggered_id
+    ctx = callback_context
+    ctx_id = getattr(ctx, "triggered_id", None)
+    if ctx_id is None and ctx.triggered:
+        ctx_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
     if ctx_id == "submit-url" and url_value and url_value.strip():
 
         if not is_url(url_value.strip()):
@@ -233,40 +237,45 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
             return dash.no_update, dash.no_update, message, dash.no_update, "error"
         
         if not validate_url_domain(url_value.strip()):
-            message = "❌ URL domain not supported. Please use articles from approved sources only."
+            message = "❌ URL domain not supported. Please use articles from the following sources (BBC, CNN, TheGuardian, CBS, CNA, ST, NBC, FOX, ABCNews) only."
             return dash.no_update, dash.no_update, message, dash.no_update, "error"
         
         url_to_post = url_value.strip()
-        try:
-            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
-
-            response_data = response.json() #if response.content else {} # Returns the dictionary 
-            # response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
-            message = f"✅ Input successfully registered."
-            return True, url_to_post, message, response_data,'success'  # Return the response data as well
-        except Exception as e:
-            # In case of an error, log or use a custom error message.
-            message = f"❌ Failed to register input, Please try again."
-            return dash.no_update, dash.no_update, message, dash.no_update,'error'
-
+        message = f"✅ Input successfully registered."
     elif ctx_id == "article-img-11":
-        return True, "https://www.channelnewsasia.com/east-asia/china-cambodia-vow-supply-chain-cooperation-sign-canal-deal-5074301", "✅ Article 1 selected.", {'sample':'data1'},'success'
+        url_to_post="https://www.channelnewsasia.com/east-asia/china-cambodia-vow-supply-chain-cooperation-sign-canal-deal-5074301".strip()
+        message= f"✅ Article 1 selected."
     elif ctx_id == "article-img-21":
-        return True, "https://www.channelnewsasia.com/business/us-unveils-new-port-fees-china-built-ships-after-industry-backlash-5072056", "✅ Article 2 selected.", {'sample':'data2'},'success'
+        url_to_post="https://www.channelnewsasia.com/business/us-unveils-new-port-fees-china-built-ships-after-industry-backlash-5072056".strip()
+        message= f"✅ Article 2 selected."
     elif ctx_id == "article-img-31":
-        return True, "https://www.channelnewsasia.com/world/us-will-abandon-ukraine-peace-push-if-no-progress-soon-trump-and-rubio-say-5074911", "✅ Article 3 selected.", {'sample':'data3'},'success'
+        url_to_post="https://www.channelnewsasia.com/world/us-will-abandon-ukraine-peace-push-if-no-progress-soon-trump-and-rubio-say-5074911".strip()
+        message= f"✅ Article 3 selected."
+
+    try:
+        response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+        response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
+
+        response_data = response.json() #if response.content else {} # Returns the dictionary 
+        # response_data=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
+        return True, url_to_post, message, response_data,'success'  # Return the response data as well
+    except Exception as e:
+        # In case of an error, log or use a custom error message.
+        message = f"❌ Failed to register input, Please try again."
+        return dash.no_update, dash.no_update, message, dash.no_update,'error'
     
-    return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
 
 @app.callback(
     Output("input-status-message", "children"),
     Input("submit-url", "n_clicks"),
+    Input("article-img-11", "n_clicks"),
+    Input("article-img-21", "n_clicks"),
+    Input("article-img-31", "n_clicks"),
     Input("input-uploaded", "data"),
     Input("input-status", "data"),
 )
-def update_status(n_clicks, uploaded, status):
+def update_status(n_clicks, uploaded, n11, n21, n31, status):
     ctx = callback_context
     triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
 
@@ -274,9 +283,9 @@ def update_status(n_clicks, uploaded, status):
         return "⚠️ There was an issue with your input. Please try again."
     
     if uploaded:
-        return "✅ Input already registered"
+        return "✅ Input registered"
     
-    if triggered_id == "submit-url" and n_clicks:
+    if triggered_id in ["submit-url","article-img-11","article-img-21","article-img-31"] and n_clicks:
         return "⏳ The page is now loading. Please wait until input is registered to toggle through the visualisations."
 
     # Default message
