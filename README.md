@@ -102,9 +102,9 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 - **Folder**: `apps/`
 - **Main Pages**:
   - `webpage.py` – main Dash app interface
-  - `webpage_side.py` – side layout or auxiliary views
-- **Styling**:
-  - `index.py` – contains CSS styling and layout configuration
+
+- **Styling**: `assets/`
+  - `style.css` – contains CSS styling and layout configuration
 
 ---
 
