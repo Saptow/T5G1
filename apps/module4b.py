@@ -6,7 +6,7 @@ import dash
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
-data = pd.read_csv('FBIC_sentiment_comtrade_un.csv') 
+data = pd.read_csv('data/final/FBIC_sentiment_comtrade_un.csv') 
 
 # Convert to DataFrame
 df = pd.DataFrame(data)
@@ -349,7 +349,6 @@ def update_geo_trade_chart(reporter, partner, trade_type):
     Output("prediction-tab4b", "disabled"),
     # Input("input-uploaded", "data"),
     Input("forecast-data", "data"),  # Add this input
-    prevent_initial_call=True
 )
 def handle_prediction_upload(forecast_data):
     global df_pred

@@ -227,9 +227,12 @@ def show_loading(flag):
 @app.callback(
     Output("input-status-message", "children"),  # Change 'data' to 'children'
     Input("input-status", "data"),
+    Input('progress-flag','data'),
     State("input-uploaded", "data")
 )
-def final_message(status, uploaded):
+def final_message(status, loading, uploaded):
+    if loading=='loading':
+        return ''
     if status == "error":
         return "⚠️ There was an issue with your input. Please try again."
     if status == "success" and uploaded:
@@ -307,7 +310,9 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         message= f"✅ Article 3 selected."
 
     try:
+        # response = requests.post("http://backend:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
         response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+
         response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
 
         response_data = response.json() #if response.content else {} # Returns the dictionary 
@@ -322,4 +327,4 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
 
 # === Run App ===
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(host='0.0.0.0', port=8050, debug=False)

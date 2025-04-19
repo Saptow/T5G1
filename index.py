@@ -5,7 +5,7 @@ import pycountry
 import dash
 
 # === Load Data ===
-hist_df = pd.read_csv("historical_data.csv")
+hist_df = pd.read_csv("data/final/historical_data.csv")
 fbic_df = pd.read_csv("data/final/FBIC_sentiment_comtrade_un.csv")
 
 # === Sector Mapping ===

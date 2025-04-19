@@ -1,6 +1,8 @@
 # T5G1
 Group project for DSE3101 on question: Geopolitical distance and Global Trade
 
+Note that Docker Compose has to be used here due to the size of the requirements of this application (particularly PyTorch).
+Note that your first time you press "Go" on the frontend, it will take a while to load the model. This is because it has to download the NLP model from HuggingFace. After that, it will be cached and will be much faster. We could not Git LFS the model weights as we had hit the free quota by accident, so we are going to import it from HuggingFace instead.
 
 ## Setting up the Environment to try on your local machine using Docker Compose (Recommended)
 #### Prerequisites

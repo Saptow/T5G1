@@ -1,25 +1,26 @@
-version: "3.8"
-
 services:
+  t5g1:
+    image: t5g1:latest   
+    build:
+      context: .
+    entrypoint: ["false"]
+
   frontend:
-    build: .
-    command: python webpage.py 
-    ports:
-      - "8050:8050"
-    depends_on:
-      - backend
+    image: t5g1:latest    
+    command: python webpage.py
+    ports: ["8050:8050"]
     environment:
       - FLASK_API_URL=http://127.0.0.1:5000
-    networks:
-      - sharednet
+    depends_on: [t5g1,backend]
+    networks: [sharednet]
+
 
   backend:
-    build: .
-    command: python flask_backend.py
-    ports:
-      - "5000:5000"
-    networks:
-      - sharednet
+    image: t5g1:latest
+    command: flask --app flask_backend run 
+    ports: ["5000:5000"]
+    depends_on: [t5g1]
+    networks: [sharednet]
 
 networks:
   sharednet:

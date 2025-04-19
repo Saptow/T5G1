@@ -222,7 +222,7 @@ def process_article_for_sentiment_analysis(url, debug=False):
     config.architectures = ["DebertaForRegression"]
 
     # Load the model from the checkpoint
-    model = DebertaForRegression.from_pretrained(model_path, trust_remote_code=True, use_safetensors=True, config=config) 
+    model = DebertaForRegression.from_pretrained(model_path, trust_remote_code=True, use_safetensors=True, config=config).to("cpu")
 
     # Step 4: Define helper functions
 

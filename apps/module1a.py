@@ -179,8 +179,7 @@ def toggle_prediction_tab(uploaded):
 
 @app.callback(
     Output("module1c-tabs", "value"),
-    Input("input-uploaded", "data"),
-    prevent_initial_call=True
+    Input("input-uploaded", "data")
 )
 def switch_to_prediction_tab(uploaded):
     if uploaded:
@@ -196,7 +195,7 @@ def switch_to_prediction_tab(uploaded):
     Input('trade-type-select1c', 'data'),
     Input('sector-select1c', 'value'),
     Input('module1c-tabs', 'value'),
-    State('forecast-data', 'data')
+    Input('forecast-data', 'data')
 )
 def update_all_visualizations(selected_country, trade_type, selected_sector, tab, forecast_data):
     if tab == 'prediction':

@@ -189,7 +189,6 @@ def toggle_prediction_tab(uploaded):
 @app.callback(
     Output("module1b-tabs", "value"),
     Input("input-uploaded", "data"),
-    prevent_initial_call=True
 )
 def switch_to_prediction_tab(uploaded):
     if uploaded:

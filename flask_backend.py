@@ -18,4 +18,4 @@ def predict():
     return jsonify(json_data) #return as a json response
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)  # runs on http://localhost:5000; command to run is $ flask --app flask_backend run
+    app.run(host='0.0.0.0',port=5000, debug=False)  #command to run is $ flask --app flask_backend run

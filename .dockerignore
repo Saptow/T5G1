@@ -5,12 +5,11 @@ __pycache__/
 *.db
 .env
 venv/
-model/logs
 scraper/
 README.md
 data/cleaned
 data/original
 cleaning_code/
-app.py
-Web_Scraping_+_NLP.ipynb
-webscraping.ipynb
+AGCRN_training.ipynb
+NLP_training.ipynb
+data/unused

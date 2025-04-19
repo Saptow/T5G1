@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 
 # Load historical data
-data = pd.read_csv('FBIC_sentiment_comtrade_un.csv') 
+data = pd.read_csv('data/final/FBIC_sentiment_comtrade_un.csv') 
 
 # Convert to DataFrame
 df = pd.DataFrame(data)
@@ -485,7 +485,7 @@ def update_graph(reporter_country, selected_countries, num_countries, order, met
     Output("prediction-tab4a", "disabled"),
     Output("year-dropdown", "options"),
     Output("year-dropdown", "value"),
-    Input("forecast-data", "data"),  # Changed from "input-uploaded" to "forecast-data"
+    Input("forecast-data", "data"),  
     prevent_initial_call=True
 )
 def handle_prediction_upload(forecast_data):
@@ -573,7 +573,6 @@ def handle_prediction_upload(forecast_data):
 @app.callback(
     Output("module4a-tabs", "value"),
     Input("forecast-data", "data"),  
-    prevent_initial_call=True
 )
 def switch_to_prediction_tab(forecast_data):
     if forecast_data:
