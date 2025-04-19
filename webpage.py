@@ -75,13 +75,13 @@ navbar = dbc.Navbar(
         html.Div([
             html.H5("Or choose a sample article:"),
 
-            html.Img(src="/assets/news1.png", id="article-img-11", n_clicks=0,
+            html.Img(src="/assets/actualnews1.png", id="article-img-11", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-            html.Img(src="/assets/news2.png", id="article-img-21", n_clicks=0,
+            html.Img(src="/assets/actualnews2.png", id="article-img-21", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
 
-            html.Img(src="/assets/news3.png", id="article-img-31", n_clicks=0,
+            html.Img(src="/assets/actualnews3.png", id="article-img-31", n_clicks=0,
              style={"cursor": "pointer", "width": "100%", "marginBottom": "1rem"}),
         ]), 
         #html.Div(id="predict-confirmation", className="text-success mt-3 fw-semibold")
@@ -251,11 +251,11 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
             return dash.no_update, dash.no_update, message, dash.no_update,'error'
 
     elif ctx_id == "article-img-11":
-        return True, "https://sample-article1.com", "✅ Sample article 1 selected.", {'sample':'data1'},'success'
+        return True, "https://www.channelnewsasia.com/east-asia/china-cambodia-vow-supply-chain-cooperation-sign-canal-deal-5074301", "✅ Article 1 selected.", {'sample':'data1'},'success'
     elif ctx_id == "article-img-21":
-        return True, "https://sample-article2.com", "✅ Sample article 2 selected.", {'sample':'data2'},'success'
+        return True, "https://www.channelnewsasia.com/business/us-unveils-new-port-fees-china-built-ships-after-industry-backlash-5072056", "✅ Article 2 selected.", {'sample':'data2'},'success'
     elif ctx_id == "article-img-31":
-        return True, "https://sample-article3.com", "✅ Sample article 3 selected.", {'sample':'data3'},'success'
+        return True, "https://www.channelnewsasia.com/world/us-will-abandon-ukraine-peace-push-if-no-progress-soon-trump-and-rubio-say-5074911", "✅ Article 3 selected.", {'sample':'data3'},'success'
     
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
