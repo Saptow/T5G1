@@ -2,6 +2,7 @@ import warnings
 import pandas as pd
 import requests
 warnings.filterwarnings("ignore", message="A nonexistent object was used in an `Input` of a Dash callback.")
+from urllib.parse import urlparse
 
 import dash
 from dash import dcc, html, Output, Input, callback_context, State
@@ -345,17 +346,53 @@ def toggle_offcanvas(n_clicks):
     prevent_initial_call=True
 )
 def handle_input_submission(n_go, n1, n2, n3, url_value):
+
+    # Define a static whitelist of approved domains for helper function
+    APPROVED_DOMAINS = {
+        "bbc.com", "edition.cnn.com", "theguardian.com", "cbsnews.com",  "apnews.com", 
+        "channelnewsasia.com", "straitstimes.com","nbcnews.com","foxnews.com","abcnews.go.com"
+    }
+    def validate_url_domain(url: str):
+        """
+        Checks whether the domain of a given URL is within the approved list.
+        Returns True if valid, False if not.
+        """
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower().replace("www.", "")
+            # Match subdomains if needed using endswith
+            return any(domain == approved or domain.endswith("." + approved) for approved in APPROVED_DOMAINS)
+        except:
+            return False
+        
+    def is_url(str):
+        """
+        Check if the string is a valid URL.
+        """
+        try:
+            result = urlparse(str)
+            return all([result.scheme, result.netloc])
+        except:
+            return False
+        
     ctx_id = callback_context.triggered_id
     if ctx_id == "submit-url" and url_value and url_value.strip():
+
+        if not is_url(url_value.strip()): #for URL validation
+            message = "❌ Invalid URL format. Please enter a valid URL."
+            return dash.no_update, dash.no_update, message, dash.no_update
+        
+        if not validate_url_domain(url_value.strip()): ##for domain validation
+            message = "❌ URL domain not supported. Please use articles from approved sources only."
+            return dash.no_update, dash.no_update, message, dash.no_update
+        
         url_to_post = url_value.strip()
         try:
             response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
             response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
-            response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-            response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
-            
+
             response_data = response.json() #if response.content else {} # Returns the dictionary 
-            response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
+            # response=pd.read_csv("sample_2026.csv",header=0).to_dict() # For testing purposes, replace with the actual API call
             message = f"✅ Input successfully registered."
             return True, url_to_post, message, response_data  # Return the response data as well
         except Exception as e:
