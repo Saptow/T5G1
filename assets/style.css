@@ -1,0 +1,80 @@
+/* assets/style.css */
+
+/* === Global Page Styles === */
+body {
+    background-color: #f4f6f9;
+    font-family: 'Lato', sans-serif;
+    font-size: 14px;
+    color: #333;
+    margin: 0;
+    padding: 120px;
+}
+
+/* Force all h6 to inherit Lato from body */
+h6 {
+    font-family: 'Lato', sans-serif !important;
+    /* undo any Bootstrap text‑muting transforms */
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+/* === Navbar Styling === */
+.navbar {
+    background-color: #2C3E50;
+    height: 125px;
+    position: fixed;
+    padding: 0.5rem 1rem;
+}
+
+/* Navbar Brand (left title) */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 3rem;
+    color: white !important;
+    margin-left: 2rem;
+}
+
+/* Navbar links and dropdown toggles */
+.navbar .nav-link,
+.navbar .dropdown-toggle {
+    color: white !important;
+    font-weight: 500;
+    font-size: 0.8rem;
+}
+
+/* Dropdown menu styling */
+.dropdown-menu {
+    background-color: white;
+    border: none;
+}
+
+/* Dropdown items */
+.dropdown-menu .dropdown-item {
+    color: black !important;
+    background-color: white;
+}
+
+/* Hover effect on dropdown items */
+.dropdown-menu .dropdown-item:hover {
+    background-color: #f1f1f1;
+    color: black !important;
+}
+
+/* === Page Content Wrapper === */
+#page-content {
+    margin-left: 0;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* === Buttons === */
+button {
+    padding: 10px 15px;
+    border: none;
+    color: black;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
