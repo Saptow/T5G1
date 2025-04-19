@@ -132,11 +132,11 @@ layout = html.Div([
         html.H4("Latest Market News", className="text-center mt-4 mb-3"),
         dbc.Carousel(
             items=[
-                {"key": "1", "src": "/assets/news1.png"},
-                {"key": "2", "src": "/assets/news2.png"},
-                {"key": "3", "src": "/assets/news3.png"},
-                {"key": "4", "src": "/assets/news4.png"},
-                {"key": "5", "src": "/assets/news5.png"},
+                {"key": "1", "src": "/assets/actualnews1.png"},
+                {"key": "2", "src": "/assets/actualnews2.png"},
+                {"key": "3", "src": "/assets/actualnews3.png"},
+                {"key": "4", "src": "/assets/actualnews4.png"},
+                {"key": "5", "src": "/assets/actualnews5.png"},
             ],
             controls=True,
             indicators=True,
