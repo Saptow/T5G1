@@ -1,3 +1,4 @@
+import time
 import warnings
 import pandas as pd
 import requests
@@ -88,8 +89,14 @@ navbar = dbc.Navbar(
         # html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
         # html.Div(id="input-status-message", className="mt-2"),
         html.Div(id="predict-confirmation", className="mt-3 fw-semibold"),
-        html.Div(id="input-status-message", className="mt-2 text-muted"),
-
+        html.Div(id="input-status-message", className="mt-2"),
+        #   ② rendered while loading
+        dcc.Loading(
+            id="loading-spinner",
+            type="circle",
+            fullscreen=False,
+            children=html.Div(id="loading-text", className="mt-2"),
+        ),
     ], style={"maxWidth": "1800px"}
 ),
     ]),
@@ -114,6 +121,7 @@ def serve_layout():
         dcc.Store(id="input-uploaded", data=False, storage_type="session"),
         dcc.Store(id="forecast-data", storage_type="memory"),
         dcc.Store(id="input-status", data=None, storage_type="memory"),
+        dcc.Store(id='progress-flag',data=None),
 
         # Main UI components
         navbar,
@@ -181,6 +189,52 @@ def toggle_offcanvas(n_clicks):
         return True
     return False
 
+@app.callback(
+    Output("progress-flag", "data"),
+    Input("submit-url", "n_clicks"),
+    Input("article-img-11", "n_clicks"),
+    Input("article-img-21", "n_clicks"),
+    Input("article-img-31", "n_clicks"),
+    prevent_initial_call=True,
+)
+def start_loading(*_):
+    return "loading"
+
+@app.callback(
+    Output("progress-flag", "data", allow_duplicate=True),
+    Input("forecast-data", "data"),  # Using the forecast data as a better indicator of completion
+    Input("input-status", "data"),   # Also watch for error states
+    prevent_initial_call=True,
+)
+def stop_loading(forecast_data, status):
+    # Clear the flag if we have forecast data or got an error status
+    if forecast_data is not None or status == "error":
+        time.sleep(0.5)
+        return None
+    return dash.no_update
+@app.callback(
+    Output("loading-text", "children"),
+    Output("loading-spinner", "style"),   # show / hide by style
+    Input("progress-flag", "data"),
+    prevent_initial_call=True,
+)
+def show_loading(flag):
+    if flag == "loading":
+        return "⏳ The page is now loading. Please wait…", {}
+    # hide for "done" or "error"
+    return '', {"display": "none"}
+
+@app.callback(
+    Output("input-status-message", "children"),  # Change 'data' to 'children'
+    Input("input-status", "data"),
+    State("input-uploaded", "data")
+)
+def final_message(status, uploaded):
+    if status == "error":
+        return "⚠️ There was an issue with your input. Please try again."
+    if status == "success" and uploaded:
+        return "✅ Input registered."
+    return "ℹ️ No article uploaded yet"
 
 @app.callback(
     Output("input-uploaded", "data", allow_duplicate=True),
@@ -265,31 +319,6 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         return dash.no_update, dash.no_update, message, dash.no_update,'error'
     
 
-
-@app.callback(
-    Output("input-status-message", "children"),
-    Input("submit-url", "n_clicks"),
-    Input("article-img-11", "n_clicks"),
-    Input("article-img-21", "n_clicks"),
-    Input("article-img-31", "n_clicks"),
-    Input("input-uploaded", "data"),
-    Input("input-status", "data"),
-)
-def update_status(n_clicks, uploaded, n11, n21, n31, status):
-    ctx = callback_context
-    triggered_id = ctx.triggered[0]["prop_id"].split(".")[0] if ctx.triggered else None
-
-    if status == "error":
-        return "⚠️ There was an issue with your input. Please try again."
-    
-    if uploaded:
-        return "✅ Input registered"
-    
-    if triggered_id in ["submit-url","article-img-11","article-img-21","article-img-31"] and n_clicks:
-        return "⏳ The page is now loading. Please wait until input is registered to toggle through the visualisations."
-
-    # Default message
-    return "ℹ️ No article uploaded yet"
 
 # === Run App ===
 if __name__ == '__main__':
