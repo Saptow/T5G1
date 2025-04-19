@@ -10,6 +10,7 @@ Group project for DSE3101 on question: Geopolitical distance and Global Trade
   - [Setting up the Environment Manually (if Docker Compose does not work)](#setting-up-the-environment-manually-if-docker-compose-does-not-work)
     - [Prerequisites](#prerequisites-1)
     - [Setting up the Virtual Environment](#setting-up-the-virtual-environment)
+  - [Where to Find Everything](#where-to-find-everything)
   - [Brief Description of Models](#brief-description-of-models)
   - [Pre-Processing Steps](#pre-processing-steps)
   - [Training Pipeline](#training-pipelines)
@@ -95,6 +96,40 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 
     This will start the application and expose it on port 8050(frontend) and 5000(backend).
 
+## Where to Find Everything
+### Frontend
+
+- **Folder**: `apps/`
+- **Main Pages**:
+  - `webpage.py` – main Dash app interface
+  - `webpage_side.py` – side layout or auxiliary views
+- **Styling**:
+  - `index.py` – contains CSS styling and layout configuration
+
+---
+
+### Backend
+
+- **Folder**: `model/`
+- **Core Modules**:
+  - `helpers_backend.py` – utility functions used in backend processing
+  - `agcrn_model.py` – entry point for AGCRN model
+  - `AGCRN/` – source code and layers for the Adaptive Graph Convolutional Recurrent Network (AGCRN)
+
+---
+
+### Model Training and Benchmarking
+
+- `fixedeffect.ipynb` – benchmarking notebook using fixed effects regression on trade indices
+- `NLP_training.ipynb` – fine-tuning and training pipeline for the sentiment analysis model
+- `AGCRN_training.ipynb` – time series model training for sectoral trade forecasts
+
+---
+
+### API Service
+
+- `flask_backend.py` – Flask API backend handling prediction requests and routing
+Datasets used for our application can be found under **data/final** folder, while the cleaning code and scraper can be found in the cleaning code and scraper folders respectively. 
 ## Brief Description of Models
 Our backend consists of 2 sub-models, namely our NLP model and ACGRN model. Together, they function to forecast sectoral bilateral trade volumes between country pairs from a piece of trade news article. 
 It starts with the trade news article being scraped by Trafilatura, which then gets parsed into the NLP model to output sentimental scores between country pairs, as well as year. These are pipelined into the ACGRN model, in the form of our unique composite Geopolitical Distance Index, to output 2026 sectoral bilateral trade volumes between country pairs. More details can be found in our technical documentation [here]().
