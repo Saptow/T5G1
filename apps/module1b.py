@@ -3,7 +3,7 @@
 
 import pandas as pd
 import plotly.express as px
-from dash import dcc, html, Input, Output, State, callback_context, get_app
+from dash import dcc, html, Input, Output, State, callback_context, get_app, ctx
 import dash
 import dash_bootstrap_components as dbc
 from dash.dependencies import ALL
@@ -377,13 +377,55 @@ def update_partner_dropdown(selected_country):
 )
 def update_selected_sector(n_clicks, subtab):
     if subtab not in ["historical-bar7abc", "prediction-bar7abc"]:
-        return dash.no_update, [{} for _ in SECTOR_CODES]
+        raise dash.exceptions.PreventUpdate
+
     if not any(n_clicks):
-        styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(SECTOR_CODES))]
+        styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(n_clicks))]
         return SECTOR_CODES[0], styles
+
     selected_idx = n_clicks.index(max(n_clicks))
-    styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(SECTOR_CODES))]
+    styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(n_clicks))]
     return SECTOR_CODES[selected_idx], styles
+
+
+# @app.callback(
+#     Output("selected-sector7abc", "data"),
+#     Output({"type": "sector-btn_module1c", "index": ALL}, "style"),
+#     Input({"type": "sector-btn_module1c", "index": ALL}, "n_clicks_timestamp"),
+#     State("module1c-subtabs7abc", "value")
+# )
+# def update_selected_sector(n_clicks, subtab):
+#     if subtab not in ["historical-bar7abc", "prediction-bar7abc"]:
+#         return dash.no_update, [{} for _ in SECTOR_CODES]
+#     if not any(n_clicks):
+#         styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == 0 else {} for i in range(len(SECTOR_CODES))]
+#         return SECTOR_CODES[0], styles
+#     selected_idx = n_clicks.index(max(n_clicks))
+#     styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if i == selected_idx else {} for i in range(len(SECTOR_CODES))]
+#     return SECTOR_CODES[selected_idx], styles
+
+# @app.callback(
+#     Output("selected-sectors-multi7abc", "data"),
+#     Output({"type": "sector-btn-multi_module1c", "index": ALL}, "style"),
+#     Input({"type": "sector-btn-multi_module1c", "index": ALL}, "n_clicks"),
+#     State("selected-sectors-multi7abc", "data")
+# )
+# def toggle_multi_sector(n_clicks_list, selected_sectors):
+#     ctx = callback_context.triggered_id
+#     if not ctx:
+#         raise PreventUpdate
+
+#     code = ctx["index"]
+#     if code in selected_sectors:
+#         selected_sectors.remove(code)
+#     else:
+#         selected_sectors.append(code)
+
+#     styles = [
+#         {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_sectors else {}
+#         for code in SECTOR_CODES
+#     ]
+#     return selected_sectors, styles
 
 @app.callback(
     Output("selected-sectors-multi7abc", "data"),
@@ -392,16 +434,17 @@ def update_selected_sector(n_clicks, subtab):
     State("selected-sectors-multi7abc", "data")
 )
 def toggle_multi_sector(n_clicks_list, selected_sectors):
-    ctx = callback_context.triggered_id
-    if not ctx:
-        raise PreventUpdate
+    triggered = callback_context.triggered_id
+    if not triggered:
+        raise dash.exceptions.PreventUpdate
 
-    code = ctx["index"]
-    if code in selected_sectors:
-        selected_sectors.remove(code)
+    index_clicked = triggered["index"]
+    if index_clicked in selected_sectors:
+        selected_sectors.remove(index_clicked)
     else:
-        selected_sectors.append(code)
+        selected_sectors.append(index_clicked)
 
+    # Use SECTOR_CODES to ensure correct ordering and length
     styles = [
         {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_sectors else {}
         for code in SECTOR_CODES

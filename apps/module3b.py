@@ -1,6 +1,6 @@
 import pandas as pd
 import plotly.express as px
-from dash import dcc, html, Input, Output, State, callback_context, get_app
+from dash import dcc, html, Input, Output, State, callback_context, get_app, ctx
 import dash_bootstrap_components as dbc
 from dash.dependencies import ALL
 import dash_daq as daq
@@ -228,27 +228,26 @@ def render_partner_buttons(subtab):
     State("selected-partners-multi8abc", "data")
 )
 def toggle_selected_partners(n_clicks, selected_partners):
-    ctx = callback_context.triggered_id
+    if not selected_partners:
+        selected_partners = []
 
-    # initial load
-    if not ctx:
-        styles = [
-            {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_partners else {}
-            for code in COUNTRY_LABELS
-        ]
-        return selected_partners, styles
+    # Determine which was clicked
+    triggered = ctx.triggered_id
+    if not triggered:
+        return selected_partners, [{}] * len(n_clicks)
 
-    # User click event
-    code = ctx["index"]
-    if code in selected_partners:
-        selected_partners.remove(code)
+    code_clicked = triggered["index"]
+    if code_clicked in selected_partners:
+        selected_partners.remove(code_clicked)
     else:
-        selected_partners.append(code)
+        selected_partners.append(code_clicked)
 
+    # Return style list of exact same length as the buttons
     styles = [
-        {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_partners else {}
-        for code in COUNTRY_LABELS
+        {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if ctx.inputs_list[0][i]["id"]["index"] in selected_partners else {}
+        for i in range(len(n_clicks))
     ]
+
     return selected_partners, styles
 
 
