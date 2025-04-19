@@ -15,15 +15,6 @@ import dash_daq as daq
 # === Load and Prepare Data ===
 df_raw = pd.read_csv("data/final/historical_data.csv")
 
-# # === Load and Prepare Prediction Data ===
-# prediction_df = pd.read_csv("sample_2026.csv")
-# prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-# prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
-
-# # Merge historical and prediction data
-# df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
-# df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
-
 SECTOR_LABELS = {
     "bec_1": "Food and Agriculture",
     "bec_2": "Energy and Mining",
@@ -141,27 +132,6 @@ layout = html.Div([
                 className="mb-3")
         ], className="col-md-6")
     ], className="row mb-3"),
-
-
-    # html.Div([
-    #     html.Label("Trade Type", className="form-label fw-semibold mb-1 text-center w-100"),
-    #     dbc.ButtonGroup([
-    #         dbc.Button("Trade Volume", id='btn-total7abc', n_clicks=0, outline=False, size='sm', color='primary'),
-    #         dbc.Button("Exports", id='btn-export7abc', n_clicks=0, outline=True, size='sm', color='primary'),
-    #         dbc.Button("Imports", id='btn-import7abc', n_clicks=0, outline=True, size='sm', color='primary')
-    #     ], className='w-100')
-    # ], className="mb-4"),
-
-    # html.Div([
-    #     html.Label("Display Mode", className="form-label fw-semibold mb-2"),
-    #     daq.ToggleSwitch(
-    #         id='toggle-display7abc',
-    #         label='Volume / Percentage Share',
-    #         value=True,
-    #         className="mb-2",
-    #         size=60
-    #     )
-    # ], className="mb-4 d-flex flex-column align-items-center"),
     html.Div([
         html.Div([
             html.Label("Select Direction of Trade:", className="form-label fw-semibold mb-1 text-center w-100"),

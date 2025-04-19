@@ -9,16 +9,7 @@ import dash
 
 # === Load and Prepare Data ===
 df_raw = pd.read_csv("data/final/historical_data.csv")
-
-#prediction_df = pd.read_csv("sample_2026.csv")
-#prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-#prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
 df_raw['year'] = pd.to_numeric(df_raw['year'], errors='coerce')
-
-#runtime_prediction_df = prediction_df.copy()
-
-# Merge historical and prediction data
-#df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
 
 app = get_app()
 
@@ -27,26 +18,6 @@ app = get_app()
     Input("forecast-data", "data"),
     prevent_initial_call=True
 )
-# def process_forecast_data(forecast_data):
-#     if not forecast_data:
-#         return dash.no_update
-        
-#     # Convert the forecast data to DataFrame
-#     prediction_df = pd.DataFrame(forecast_data)
-#     #prediction_df.to_csv()
-    
-#     # Filter postshock scenario if available
-#     if "scenario" in prediction_df.columns:
-#         prediction_df = prediction_df[prediction_df["scenario"] == "postshock"].drop(columns=["scenario"])
-    
-#     # Ensure year is numeric
-#     prediction_df['year'] = pd.to_numeric(prediction_df['year'], errors='coerce')
-    
-#     # Merge with historical data
-#     df_combined_all = pd.concat([df_raw, prediction_df], ignore_index=True)
-    
-#     # Return the processed data
-#     return df_combined_all.to_dict('records')
 
 def process_forecast_data(forecast_data):
     global runtime_prediction_df  # assignment to outer variable 
@@ -115,19 +86,6 @@ def calculate_volume(df_view, sector_code, trade_type):
         df_view["value"] = df_view[exp_col] + df_view[imp_col]
     return df_view
 
-# def calculate_percentage(df_view, trade_type):
-#     if trade_type == "export":
-#         trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES]
-#     elif trade_type == "import":
-#         trade_cols = [f"{code}_import_A_from_B" for code in SECTOR_CODES]
-#     else:
-#         trade_cols = [f"{code}_export_A_to_B" for code in SECTOR_CODES] + \
-#                       [f"{code}_import_A_from_B" for code in SECTOR_CODES]
-
-#     df_view["total"] = df_view[trade_cols].sum(axis=1)
-#     df_view["percentage"] = 100 * df_view["value"] / df_view["total"].replace(0, 1)
-#     return df_view
-
 def calculate_percentage(df_view, sector_code, trade_type, country_id, df_all):
     if trade_type == "export":
         col = f"{sector_code}_export_A_to_B"
@@ -138,7 +96,7 @@ def calculate_percentage(df_view, sector_code, trade_type, country_id, df_all):
     else:
         df_view["value"] = df_view[f"{sector_code}_export_A_to_B"] + df_view[f"{sector_code}_import_A_from_B"]
 
-    # 🆕 Use full df_all (either just df_raw or df_raw + prediction)
+    # using full df_all (either just df_raw or df_raw + prediction)
     all_partners_view = df_all[df_all["country_a"] == country_id].copy()
     if trade_type == "export":
         all_partners_view["value"] = all_partners_view[f"{sector_code}_export_A_to_B"]
@@ -158,19 +116,6 @@ def calculate_percentage(df_view, sector_code, trade_type, country_id, df_all):
 def calculate_sector_shares(df_view, sector_code, trade_type, country_id, df_all):
     return calculate_percentage(df_view, sector_code, trade_type, country_id, df_all)
 
-
-# def calculate_sector_shares(df_view, sector_code, trade_type, country_id):
-#     #df_view = calculate_volume(df_view, sector_code, trade_type)
-#     df_view = calculate_percentage(df_view, sector_code, trade_type, country_id)
-#     return df_view
-
-
-
-
-# === New Sector-as-Main-Input Module with ID suffix "8abc" ===
-
-# --- Only changes are: input param becomes sector; sector buttons are now partner country buttons ---
-# --- All other logic (data loading, tab layout, toggle, graphs, etc.) remain the same ---
 
 layout = html.Div([
     dcc.Store(id="selected-sector8abc", data=SECTOR_CODES[0]),
@@ -276,24 +221,6 @@ def render_partner_buttons(subtab):
         ], className="d-flex flex-wrap")
     ])
 
-# @app.callback(
-#     Output("selected-partners-multi8abc", "data"),
-#     Output({"type": "partner-btn8abc", "index": ALL}, "style"),
-#     Input({"type": "partner-btn8abc", "index": ALL}, "n_clicks"),
-#     State("selected-partners-multi8abc", "data")
-# )
-# def toggle_selected_partners(n_clicks, selected_partners):
-#     ctx = callback_context.triggered_id
-#     if not ctx:
-#         raise dash.exceptions.PreventUpdate
-#     partner = ctx["index"]
-#     if partner in selected_partners:
-#         selected_partners.remove(partner)
-#     else:
-#         selected_partners.append(partner)
-#     styles = [{"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_partners else {} for code in COUNTRY_LABELS]
-#     return selected_partners, styles
-
 @app.callback(
     Output("selected-partners-multi8abc", "data"),
     Output({"type": "partner-btn8abc", "index": ALL}, "style"),
@@ -303,7 +230,7 @@ def render_partner_buttons(subtab):
 def toggle_selected_partners(n_clicks, selected_partners):
     ctx = callback_context.triggered_id
 
-    # Initial load: no click event, just show default selected styles
+    # initial load
     if not ctx:
         styles = [
             {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_partners else {}
@@ -476,16 +403,6 @@ def switch_to_prediction_tab(uploaded):
     if uploaded:
         return "prediction"
     return dash.no_update
-
-# @app.callback(
-#     Output({"type": "partner-btn8abc", "index": ALL}, "style"),
-#     Input("selected-partners-multi8abc", "data")
-# )
-# def sync_button_styles_with_store(selected_partners):
-#     return [
-#         {"border": "2px solid #007bff", "backgroundColor": "#e7f1ff"} if code in selected_partners else {}
-#         for code in COUNTRY_LABELS
-#     ]
 
 sidebar_controls = html.Div([])
 

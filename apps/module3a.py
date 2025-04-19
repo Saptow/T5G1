@@ -58,7 +58,7 @@ COUNTRY_LABELS = {
 COUNTRY_NAMES = {v: k for k, v in COUNTRY_LABELS.items()}
 COUNTRY_LIST = sorted(COUNTRY_LABELS.values())
 
-# new layout trial 
+# layout
 layout = html.Div([
     dcc.Store(id="trade-type-select1b", data='total'),
     dcc.Store(id="display-type1b", data='percentage'),
@@ -146,9 +146,6 @@ layout = html.Div([
         dcc.Graph(id='country-bar1b', style={'display': 'none'})
     ], style={'display': 'none'})
 ])
-
-
-
 
 app = get_app()
 
@@ -280,7 +277,6 @@ def calculate_percentages(data, group_by, latest_year, prev_year):
 def generate_bar_chart(df, x_col, y_col, previous_col, latest_year, prev_year):
     df_sorted = df.sort_values(y_col, ascending=False)
     df_sorted['change'] = 100 * (df_sorted[y_col] - df_sorted[previous_col]) / df_sorted[previous_col].replace(0, 1)
-    #df_sorted['hover'] = df_sorted.apply(lambda row: f"Current: {row[y_col]:,.0f}<br>Previous: {row[previous_col]:,.0f}<br>Change: {row['change']:+.2f}%", axis=1)
     df_sorted['hover'] = df_sorted.apply(
         lambda row: f"Current ({latest_year}): {row[y_col]:,.0f}<br>Previous ({prev_year}): {row[previous_col]:,.0f}<br>Change in Volume: {row['change']:+.2f}%",
         axis=1
@@ -322,7 +318,6 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
             # Convert the stored JSON data back to a DataFrame
             new_df = pd.DataFrame(forecast_data)
             
-            # Apply any necessary transformations similar to what you did with the CSV data
             new_df = new_df[new_df['scenario'] == 'postshock'].copy() if 'scenario' in new_df.columns else new_df
             if 'scenario' in new_df.columns:
                 new_df.drop(columns=['scenario'], inplace=True)
@@ -350,7 +345,7 @@ def update_all_visualizations(selected_country, trade_type, selected_partner, ta
     # Rest of the visualization code remains the same
     country_id = COUNTRY_NAMES[selected_country]
     
-    # Filter data: always treat selected_country as A
+    # filter data: always treat selected_country as A
     filtered = data_source[data_source['country_a'] == country_id].copy()
     filtered['partner_country'] = filtered['country_b'].map(COUNTRY_LABELS)
 

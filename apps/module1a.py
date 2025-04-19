@@ -238,7 +238,6 @@ def update_all_visualizations(selected_country, trade_type, selected_sector, tab
         filtered['trade_value'] = filtered[col_export] + filtered[col_import]
         col = 'trade_value'
 
-    #latest_year = filtered['year'].max()
     latest_year = forecast_year
     prev_year = filtered['year'][filtered['year'] < latest_year].max()
 
