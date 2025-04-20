@@ -22,7 +22,7 @@ Group project for DSE3101 on question: Geopolitical distance and Global Trade
 Ensure you have Docker and Docker Compose installed. If not, you can install them by following the instructions [here](https://docs.docker.com/get-docker/) for Docker and [here](https://docs.docker.com/compose/install/) for Docker Compose. </br>
 
 Note that Docker Compose has to be used here due to the size of the requirements of this application (particularly PyTorch). </br>
-Note that your first time you press "Go" on the frontend, it will take a while to load the model. This is because it has to download the NLP model from HuggingFace. After that, it will be cached and will be much faster. We could not Git LFS the model weights as we had hit the free quota by accident, so we are going to import it from HuggingFace instead. Apologies for that...
+Note that your first time you press "Go" on the frontend, it will take a while to load the model. This is because it has to download the NLP model from HuggingFace. After that, it will be cached and will be much faster. We could not Git LFS the NLP model weights as we had hit the free quota by accident, so we are going to import it from HuggingFace instead. Apologies for that...
 
 #### Steps
 1. **Clone the repository:**
