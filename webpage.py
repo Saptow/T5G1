@@ -310,8 +310,8 @@ def handle_input_submission(n_go, n1, n2, n3, url_value):
         message= f"✅ Article 3 selected."
 
     try:
-        # response = requests.post("http://backend:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
-        response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+        response = requests.post("http://backend:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
+        # response = requests.post("http://127.0.0.1:5000/predict", json={"url": url_to_post}, headers={"Content-Type": "application/json"})
 
         response.raise_for_status()  # Raise an error for bad responses (status codes 4xx, 5xx)
 
