@@ -3,7 +3,6 @@ Group project for DSE3101 on question: Geopolitical distance and Global Trade
 
 ## Table of Contents
 - [T5G1](#t5g1)
-  - [Table of Contents](#table-of-contents)
   - [Setting up the Environment to try on your local machine using Docker Compose (Recommended)](#setting-up-the-environment-to-try-on-your-local-machine-using-docker-compose-recommended)
     - [Prerequisites](#prerequisites)
     - [Steps](#steps)
@@ -120,8 +119,8 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 
 ### Model Training and Benchmarking
 
-- `fixedeffect.ipynb` – benchmarking notebook using fixed effects regression on trade indices
-- `NLP_training.ipynb` – fine-tuning and training pipeline for the sentiment analysis model
+- `model/fixedeffect.ipynb` – benchmarking notebook using fixed effects regression for geopolitical distance index
+- `NLP_training.ipynb` – fine-tuning and training pipeline for the sentiment score model
 - `AGCRN_training.ipynb` – time series model training for sectoral trade forecasts
 
 ---
@@ -132,7 +131,7 @@ Ensure you have `pyenv` installed. If not, you can install it by following the i
 Datasets used for our application can be found under **data/final** folder, while the cleaning code and scraper can be found in the cleaning code and scraper folders respectively. 
 ## Brief Description of Models
 Our backend consists of 2 sub-models, namely our NLP model and ACGRN model. Together, they function to forecast sectoral bilateral trade volumes between country pairs from a piece of trade news article. 
-It starts with the trade news article being scraped by Trafilatura, which then gets parsed into the NLP model to output sentimental scores between country pairs, as well as year. These are pipelined into the ACGRN model, in the form of our unique composite Geopolitical Distance Index, to output 2026 sectoral bilateral trade volumes between country pairs. More details can be found in our technical documentation [here]().
+It starts with the trade news article being scraped by Trafilatura, which then gets parsed into the NLP model to output sentimental scores between country pairs, as well as year. These are pipelined into the ACGRN model, in the form of our unique composite Geopolitical Distance Index, to output 2026 sectoral bilateral trade volumes between country pairs. More details can be found in our technical documentation.
 
 ## Pre-Processing Steps
 Datasets used include:
